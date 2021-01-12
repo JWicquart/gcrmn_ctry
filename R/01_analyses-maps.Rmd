@@ -85,6 +85,14 @@ data_reefs %>%
 # Background maps
 
 ```{r}
+# 1. Load data ----
+
+data_benthos <- read_csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
+
+# 2. Keep only the top 30
+
+data_benthos_3O <- data_benthos %>% 
+  
 
 # 2. Load background map data ----
 
@@ -98,19 +106,20 @@ land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands
 
 # 3. Make the map ----
 
-temp <- data_file %>% distinct(Area, Country, Archipelago, Location, Site, .keep_all = T)
-
-data_map <- data_file %>% 
-  select(Latitude, Longitude) %>% 
-  distinct()
-
-data_file %>% 
-  select(Latitude, Longitude) %>% 
-  distinct() %>% 
+data_benthos %>% 
+  select(Area, Latitude, Longitude) %>% 
+  distinct(Latitude, Longitude, .keep_all = T)  %>% 
+  filter(!is.na(Latitude)) %>% 
+  filter(!is.na(Longitude)) %>% 
+  slice(., 1:100) %>% 
   ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point()
+  geom_point(aes(x= Longitude, y= Latitude, color = Area), size= 1) 
+
+ggsave("./../figs/01-map_site-location-global.png", width = 12, height = 6)
+
+
 
 ```
 
