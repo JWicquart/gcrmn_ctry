@@ -32,6 +32,8 @@ source("functions/theme_graph.R")
 
 library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
+library(formattable) # For interactive html tables
+library(DT) # For interactive html tables
 
 # 3. Set default ggplot theme ----
 
@@ -49,21 +51,34 @@ load(file = "./../data/reefs.eez.Rdata")
 
 # 2. Transform to an sf object ----
 
-reefs.eez <- reefs.eez %>% 
+data_reefs <- reefs.eez %>% 
   st_as_sf()
 
-# 3. Make the plot ----
+# 3. Calculate the reef area by country ----
 
-ggplot() +
-  geom_sf(data = reefs.eez, aes(fill = SOVEREIGN1), show.legend = FALSE)
+data_reefs <- data_reefs %>% 
+  # Calculate the reef area and transform it from m2 to km2
+  mutate(reef_area = as.numeric(st_area(.))/1000000) %>%
+  # Make the sum of area by country
+  st_drop_geometry() %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(total_area_abs = sum(reef_area)) %>% 
+  ungroup() %>% 
+  # Sort rows from higher reef area to lower
+  arrange(-total_area_abs) %>% 
+  # Calculate the relative contribution
+  mutate(total_area_rel = total_area_abs*100/sum(total_area_abs),
+         pos = row_number()) %>% 
+  # Misc. modifications for formattable
+  select(pos, SOVEREIGN1, total_area_abs, total_area_rel) %>% 
+  mutate(total_area_abs = round(as.numeric(total_area_abs), 3),
+         total_area_rel = round(as.numeric(total_area_rel), 3))
 
-# 4. Name of countries with reefs ----
+# 4. Make the table ----
 
-unique(reefs.eez$SOVEREIGN1)
-
-# 5. Number of country with reefs ----
-
-length(unique(reefs.eez$SOVEREIGN1))
+data_reefs %>% 
+  formattable(.) %>% 
+  as.datatable(., rownames = FALSE, colnames = c("N°", "Country", "Area (km²)", "Relative (%)"))
 
 ```
 
