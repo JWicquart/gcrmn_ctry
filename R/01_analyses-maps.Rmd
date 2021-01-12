@@ -83,9 +83,19 @@ land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands
 
 # 3. Make the map ----
 
-ggplot() +
+temp <- data_file %>% distinct(Area, Country, Archipelago, Location, Site, .keep_all = T)
+
+data_map <- data_file %>% 
+  select(Latitude, Longitude) %>% 
+  distinct()
+
+data_file %>% 
+  select(Latitude, Longitude) %>% 
+  distinct() %>% 
+  ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map)
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_point()
 
 ```
 

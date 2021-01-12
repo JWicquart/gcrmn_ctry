@@ -26,3 +26,22 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+
+library(readr)
+library(tidyverse)
+
+```
+
+
+```{r}
+
+data_file <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
+
+temp <- data_file %>%  slice(., 1:100)
+  
+
+
+
+```
