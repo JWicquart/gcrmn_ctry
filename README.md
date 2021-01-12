@@ -39,7 +39,7 @@
 
 ## 4. How to report issues?
 
-Please report any bugs or issues [HERE](https://github.com/JWicquart/monitoring_workflow/issues).
+Please report any bugs or issues [HERE](https://https://github.com/JWicquart/gcrmn_ctry/issues).
 
 
 ## 5. Reproducibility parameters

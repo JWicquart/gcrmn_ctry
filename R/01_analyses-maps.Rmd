@@ -82,6 +82,21 @@ data_reefs %>%
 
 ```
 
+# Economic Exclusive Zone
+
+```{r}
+
+# 1. Load EEZ data ----
+
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
+
+# 2. Make the map ----
+
+ggplot() +
+  geom_sf(data = data_eez)
+
+```
+
 # Background maps
 
 ```{r}
@@ -94,17 +109,17 @@ data_benthos <- read_csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
 data_benthos_3O <- data_benthos %>% 
   
 
-# 2. Load background map data ----
+# 1. Load background map data ----
 
-# 2.1 Major islands --
+# 1.1 Major islands --
 
 land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp")
 
-# 2.2 Minor islands --
+# 1.2 Minor islands --
 
 land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp")
 
-# 3. Make the map ----
+# 2. Make the map ----
 
 data_benthos %>% 
   select(Area, Latitude, Longitude) %>% 
