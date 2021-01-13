@@ -97,6 +97,27 @@ ggplot() +
 
 ```
 
+# Background maps _bidouillage
+
+```{r}
+# 1. Load data ----
+
+data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
+
+# Extracts a limited amount of datasets
+temp <- data_benthos %>% 
+  filter(DatasetID %in% c("MART1", "MART2", "MART3", "MALD1", "VIRG1", "GUAD1"))
+
+#Converts the coordinates in the database in an sf object
+
+temp <- temp %>% 
+  st_as_sf(., coords = c("Longitude", "Latitude"))
+
+# Joins the location sites to the EEZs 
+
+country_joined <- st_join(temp, data_eez["SOVEREIGN1"])
+
+```
 
 # Background maps
 
