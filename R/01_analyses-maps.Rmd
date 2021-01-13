@@ -97,16 +97,23 @@ ggplot() +
 
 ```
 
+
 # Background maps
 
 ```{r}
 # 1. Load data ----
 
-data_benthos <- read_csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
+data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
 
-# 2. Keep only the top 30
+# Getting the names of the countries from the transects using the EEZs
 
-data_benthos_3O <- data_benthos %>% 
+data_sites <- data_benthos %>% 
+  select(Area, Latitude, Longitude) %>% 
+  distinct(Latitude, Longitude, .keep_all = T)  %>% 
+  filter(!is.na(Latitude)) %>% 
+  filter(!is.na(Longitude)) 
+
+
   
 
 # 1. Load background map data ----
@@ -126,7 +133,6 @@ data_benthos %>%
   distinct(Latitude, Longitude, .keep_all = T)  %>% 
   filter(!is.na(Latitude)) %>% 
   filter(!is.na(Longitude)) %>% 
-  slice(., 1:100) %>% 
   ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
