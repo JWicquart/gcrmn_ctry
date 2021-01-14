@@ -107,7 +107,18 @@ ggplot() +
 
 data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>% 
   filter(!is.na(Latitude)) %>% 
+  filter(!is.na(Longitude))
+
+# For Jeremy
+#data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring #Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv") %>% 
+#  filter(!is.na(Latitude)) %>% 
+# filter(!is.na(Longitude))
+
+
+data_benthos <- data_benthos %>% 
+  filter(!is.na(Latitude)) %>% 
   filter(!is.na(Longitude)) 
+
 
 # Extracts a limited amount of datasets
 benthos_red <- data_benthos %>% 
@@ -182,6 +193,9 @@ land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp")
 
 land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp")
 
+# 1.3 Reefs and atolls --
+
+land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
 
 # 2. Make the map ----
   
@@ -192,12 +206,12 @@ benthos_red %>%
   ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf() +
+  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = data_test) +
+  geom_sf(col = "red") +
   xlab("Longitude") + ylab("Latitude") +
   #Focus on the Maldives
-  coord_sf(xlim = c(), ylim = c(), expand = FALSE)
-
-
+  coord_sf(xlim = c(60, 85), ylim = c(-5, 10), expand = FALSE)
 
 ```
 
