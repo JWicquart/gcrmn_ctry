@@ -100,6 +100,44 @@ ggplot() +
 
 ```
 
+# Defining top 30
+
+```{r}
+
+# Import database 
+data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>% 
+  # Remove non-filled? sites location
+  filter(!is.na(Latitude)) %>% 
+  filter(!is.na(Longitude))
+
+
+#Converts the coordinates in the database in an sf object
+
+data_benthos_join <- data_benthos %>% 
+   st_as_sf(., coords = c("Longitude", "Latitude")) 
+
+# Add a CRS to the database (CRS = GWS84, ESPG = 4326)
+st_crs(data_benthos_join) <- 4326
+
+# Joins the location sites to the EEZs to get the real names $SOVEREIGN1
+
+data_benthos_join <- st_join(data_benthos_join,data_eez)
+
+# Get top 30 from data_reefs
+
+top_30 <- data_reefs %>% 
+  select(pos, SOVEREIGN1) %>% 
+  slice(1:30) 
+
+temp <- top_30$SOVEREIGN1
+
+# Get top 30 from the database
+
+data_benthos_30 <- data_benthos_join %>% 
+  filter(SOVEREIGN1 %in% temp)
+
+```
+
 # Retrieve the countries names for 4 countries
 
 ```{r}
@@ -113,11 +151,6 @@ data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>%
 #data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring #Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv") %>% 
 #  filter(!is.na(Latitude)) %>% 
 # filter(!is.na(Longitude))
-
-
-data_benthos <- data_benthos %>% 
-  filter(!is.na(Latitude)) %>% 
-  filter(!is.na(Longitude)) 
 
 
 # Extracts a limited amount of datasets
@@ -137,8 +170,22 @@ benthos_red <- st_join(benthos_red,data_eez)
 
 ```
 
+# Extracting time range
 
-# Background maps
+```{r}
+
+data_maldives <- benthos_red %>% 
+  distinct()
+
+
+
+```
+
+
+
+
+
+# Background maps and sites location
 
 ```{r}
 
@@ -199,19 +246,24 @@ land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
 
 # 2. Make the map ----
   
+data_test <- data_eez %>% 
+  filter(SOVEREIGN1 == "Maldives")
+
 benthos_red %>% 
   # Select the Maldives only
   filter(SOVEREIGN1 == "Maldives") %>% 
-  #Create the map
+  # Create the map
   ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  # Adding the EEZ
   geom_sf(data = data_test) +
+  # Adding the location sites
   geom_sf(col = "red") +
   xlab("Longitude") + ylab("Latitude") +
   #Focus on the Maldives
-  coord_sf(xlim = c(60, 85), ylim = c(-5, 10), expand = FALSE)
+  coord_sf(xlim = c(65, 80), ylim = c(-5, 10), expand = FALSE)
 
 ```
 
