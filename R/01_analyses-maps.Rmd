@@ -35,7 +35,6 @@ library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 
-
 # 3. Set default ggplot theme ----
 
 theme_set(theme_graph())
@@ -88,7 +87,6 @@ data_reefs %>%
 ```{r}
 
 # 1. Load EEZ data ----
-## Select SOVEREIGN1 (geometry ignored by the select)
 
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
   select(SOVEREIGN1)
@@ -141,17 +139,31 @@ data_benthos_30 <- data_benthos_join %>%
 # Retrieve the countries names for 4 countries
 
 ```{r}
+
+# For Jeremy
+data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv") %>% 
+  filter(!is.na(Latitude) & !is.na(Longitude) & !is.na(Year)) %>%
+  group_by(Area, Country, Location, Site, Latitude, Longitude) %>% 
+  summarise(interval_years = max(Year, na.rm = TRUE) - min(Year, na.rm = TRUE)) %>%
+  ungroup() %>% 
+  mutate(interval_class = cut(interval_years, 
+                              breaks = c(-Inf, 1, 5, 10, 20, Inf),
+                              labels = c("1", "2-5", "6-10", "11-20", ">20")))
+
+```
+
+```{r}
+
 # 1. Load data ----
 
 data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>% 
-  filter(!is.na(Latitude)) %>% 
-  filter(!is.na(Longitude))
-
-# For Jeremy
-#data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring #Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv") %>% 
-#  filter(!is.na(Latitude)) %>% 
-# filter(!is.na(Longitude))
-
+  filter(!is.na(Latitude) & !is.na(Longitude) & !is.na(Year)) %>%
+  group_by(Area, Country, Location, Site, Latitude, Longitude) %>% 
+  summarise(interval_years = max(Year, na.rm = TRUE) - min(Year, na.rm = TRUE)) %>%
+  ungroup() %>% 
+  mutate(interval_class = cut(interval_years, 
+                              breaks = c(-Inf, 1, 5, 10, 20, Inf),
+                              labels = c("1", "2-5", "6-10", "11-20", ">20")))
 
 # Extracts a limited amount of datasets
 benthos_red <- data_benthos %>% 
