@@ -35,6 +35,7 @@ library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 
+
 # 3. Set default ggplot theme ----
 
 theme_set(theme_graph())
@@ -87,8 +88,10 @@ data_reefs %>%
 ```{r}
 
 # 1. Load EEZ data ----
+## Select SOVEREIGN1 (geometry ignored by the select)
 
-data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
+  select(SOVEREIGN1)
 
 # 2. Make the map ----
 
@@ -97,45 +100,36 @@ ggplot() +
 
 ```
 
-# Background maps _bidouillage
+# Retrieve the countries names for 4 countries
 
 ```{r}
 # 1. Load data ----
 
-data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
+data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>% 
+  filter(!is.na(Latitude)) %>% 
+  filter(!is.na(Longitude)) 
 
 # Extracts a limited amount of datasets
-temp <- data_benthos %>% 
-  filter(DatasetID %in% c("MART1", "MART2", "MART3", "MALD1", "VIRG1", "GUAD1"))
+benthos_red <- data_benthos %>% 
+  filter(DatasetID %in% c("MART1", "MART2", "MART3", "MALD1", "VIRG1", "GUAD1")) 
 
 #Converts the coordinates in the database in an sf object
 
-temp <- temp %>% 
-  st_as_sf(., coords = c("Longitude", "Latitude"))
+benthos_red <- benthos_red %>% 
+   st_as_sf(., coords = c("Longitude", "Latitude")) 
+
+st_crs(benthos_red) <- 4326
 
 # Joins the location sites to the EEZs 
 
-country_joined <- st_join(temp, data_eez["SOVEREIGN1"])
+benthos_red <- st_join(benthos_red,data_eez)
 
 ```
+
 
 # Background maps
 
 ```{r}
-# 1. Load data ----
-
-data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv")
-
-# Getting the names of the countries from the transects using the EEZs
-
-data_sites <- data_benthos %>% 
-  select(Area, Latitude, Longitude) %>% 
-  distinct(Latitude, Longitude, .keep_all = T)  %>% 
-  filter(!is.na(Latitude)) %>% 
-  filter(!is.na(Longitude)) 
-
-
-  
 
 # 1. Load background map data ----
 
@@ -158,8 +152,50 @@ data_benthos %>%
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
   geom_point(aes(x= Longitude, y= Latitude, color = Area), size= 1) 
+  
+
+benthos_red %>% 
+  filter(SOVEREIGN1 == "Mal")
+ggplot() +
+  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = benthos_red)
+  
 
 ggsave("./../figs/01-map_site-location-global.png", width = 12, height = 6)
+
+
+
+```
+
+# Plot des Maldives 
+
+```{r}
+
+# 1. Load background map data ----
+
+# 1.1 Major islands --
+
+land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp")
+
+# 1.2 Minor islands --
+
+land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp")
+
+
+# 2. Make the map ----
+  
+benthos_red %>% 
+  # Select the Maldives only
+  filter(SOVEREIGN1 == "Maldives") %>% 
+  #Create the map
+  ggplot() +
+  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_sf() +
+  xlab("Longitude") + ylab("Latitude") +
+  #Focus on the Maldives
+  coord_sf(xlim = c(), ylim = c(), expand = FALSE)
 
 
 
