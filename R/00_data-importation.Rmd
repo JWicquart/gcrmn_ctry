@@ -77,9 +77,9 @@ data_reefs <- data_reefs %>%
 
 # 4. Make the table ----
 
-data_reefs %>% 
-  formattable(.) %>% 
-  as.datatable(., rownames = FALSE, colnames = c("N°", "Country", "Area (km²)", "Relative (%)"))
+#data_reefs %>% 
+#  formattable(.) %>% 
+#  as.datatable(., rownames = FALSE, colnames = c("N°", "Country", "Area (km²)", "Relative (%)"))
 
 ```
 
@@ -117,8 +117,7 @@ data_benthos_join <- data_benthos %>%
 # Add a CRS to the database (CRS = GWS84, ESPG = 4326)
 st_crs(data_benthos_join) <- 4326
 
-# Joins the location sites to the EEZs to get the real names $SOVEREIGN1
-
+# Join the location sites to the EEZs to get the real names $SOVEREIGN1
 data_benthos_join <- st_join(data_benthos_join, data_eez)
 
 # Get top 30 from data_reefs
@@ -141,7 +140,7 @@ data_benthos_30 <- data_benthos_join %>%
 ```{r}
 # 1. Load data ----
 
-data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") 
+#data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") 
 
 data_benthos_tRange <- data_benthos %>% 
   filter(!is.na(Latitude) & !is.na(Longitude) & !is.na(Year)) %>%
@@ -156,19 +155,20 @@ data_benthos_tRange <- data_benthos %>%
 
 ```
 
-# 5. Joining the datasets
+
+# 5. Save objects as RData
 
 ```{r}
 
+save(data_benthos_30, 
+     file = "./../data/00_filtered/00-data_benthos-top_30.RData")
 
-data_benthos_full <- left_join(data_benthos_30, data_benthos_tRange)
+save(data_benthos_tRange, 
+     file = "./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
 
-```
+# POssibility to combine both :
+# save(dta_benthos_30, data_benthos_tRange, file = "./../data/00_filtered/00-data_benthos-filtered.RData")
 
-# 6. Export csv file
-
-```{r}
-
-write_csv2(data_benthos_full, "./../data/03-merge_top-30_monitoring_NA.csv") 
-
+# Test
+#load("./../data/00_filtered/00-data_benthos-top_30.RData")
 ```
