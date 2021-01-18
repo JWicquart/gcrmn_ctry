@@ -164,3 +164,11 @@ data_benthos_tRange <- data_benthos %>%
 data_benthos_full <- left_join(data_benthos_30, data_benthos_tRange)
 
 ```
+
+# 6. Export csv file
+
+```{r}
+
+write_csv2(data_benthos_full, "./../data/03-merge_top-30_monitoring_NA.csv") 
+
+```
