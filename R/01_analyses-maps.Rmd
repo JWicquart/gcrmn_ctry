@@ -93,8 +93,8 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>%
 
 # 2. Make the map ----
 
-ggplot() +
-  geom_sf(data = data_eez)
+#ggplot() +
+#  geom_sf(data = data_eez)
 
 ```
 
@@ -119,7 +119,7 @@ st_crs(data_benthos_join) <- 4326
 
 # Joins the location sites to the EEZs to get the real names $SOVEREIGN1
 
-data_benthos_join <- st_join(data_benthos_join,data_eez)
+data_benthos_join <- st_join(data_benthos_join, data_eez)
 
 # Get top 30 from data_reefs
 
@@ -166,7 +166,7 @@ data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>%
                               labels = c("1", "2-5", "6-10", "11-20", ">20")))
 
 # Extracts a limited amount of datasets
-benthos_red <- data_benthos %>% 
+benthos_red <- data_benthos_30 %>% 
   filter(DatasetID %in% c("MART1", "MART2", "MART3", "MALD1", "VIRG1", "GUAD1")) 
 
 #Converts the coordinates in the database in an sf object
@@ -182,21 +182,6 @@ benthos_red <- st_join(benthos_red,data_eez)
 
 ```
 
-# Extracting time range
-
-```{r}
-
-data_maldives <- benthos_red %>% 
-  distinct()
-
-
-
-```
-
-
-
-
-
 # Background maps and sites location - GLOBAL
 
 ```{r}
@@ -211,17 +196,18 @@ land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp")
 
 land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp")
 
+# 1.3 Reefs and atolls --
+
+land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
+
 # 2. Make the map ----
 
-data_benthos %>% 
-  select(Area, Latitude, Longitude) %>% 
-  distinct(Latitude, Longitude, .keep_all = T)  %>% 
-  filter(!is.na(Latitude)) %>% 
-  filter(!is.na(Longitude)) %>% 
+data_benthos %>%  
   ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(aes(x= Longitude, y= Latitude, color = Area), size= 1) 
+  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  geom_point(aes(x= Longitude, y= Latitude, color = interval_class), size= 1) 
   
 
 ggsave("./../figs/01-map_site-location-global.png", width = 12, height = 6)
@@ -232,7 +218,7 @@ ggsave("./../figs/01-map_site-location-global.png", width = 12, height = 6)
 
 # Plot des Maldives 
 
-```{r}
+```{r warning=FALSE}
 
 # 1. Load background map data ----
 
@@ -253,9 +239,11 @@ land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
 data_test <- data_eez %>% 
   filter(SOVEREIGN1 == "Maldives")
 
-benthos_red %>% 
+temp <- data_benthos_30 %>% 
   # Select the Maldives only
-  filter(SOVEREIGN1 == "Maldives") %>% 
+  filter(SOVEREIGN1 == "Maldives") 
+
+
   # Create the map
   ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
@@ -264,14 +252,33 @@ benthos_red %>%
   # Adding the EEZ
   geom_sf(data = data_test) +
   # Adding the location sites
-  geom_sf(col = "red") +
+  geom_sf(data = temp, aes(col = interval_class)) +
   xlab("Longitude") + ylab("Latitude") +
   #Focus on the Maldives
-  coord_sf(xlim = c(65, 80), ylim = c(-5, 10), expand = FALSE)
+  coord_sf(xlim = c(65, 80), ylim = c(-5, 10), expand = FALSE) 
+  
+  # GLOBAL MAP - Maldives
+  ggplot() +
+  geom_sf(data = land_major, fill = "grey", col = "grey") +
+  geom_sf(data = land_minor, fill = "grey", col = "grey") +
+  geom_sf(data = land_atolls, fill = "grey", col = "grey") +
+  # Adding the EEZ
+  geom_sf(data = data_test, col = "black", fill = "cadetblue2") +
+    theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank())
+        
+  
+
 
 ```
 
-test Indonesia
+#test Indonesia
 
 ```{r}
 data_test <- data_eez %>% 
@@ -291,7 +298,16 @@ data_benthos_30 %>%
   geom_sf(col = "red") +
   xlab("Longitude") + ylab("Latitude") +
   #Focus on the Maldives
-  coord_sf(xlim = c(90, 145), ylim = c(-10, 10), expand = FALSE)
+  coord_sf(xlim = c(90, 145), ylim = c(-15, 10), expand = FALSE)
+
+
+# Plot EEZ MICRONESIA
+
+data_eez %>% 
+  filter(SOVEREIGN1 == "Tonga" )%>% 
+  ggplot() +
+  geom_sf() +
+  coord_sf(xlim = c(155, 180), ylim = c(0, 20), expand = FALSE)
 
 ```
 
