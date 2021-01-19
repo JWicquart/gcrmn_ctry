@@ -98,41 +98,19 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>%
 
 ```
 
-# Defining top 30
+# Load top 30
 
 ```{r}
 
-# Import database 
-data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>% 
-  # Remove non-filled? sites location
-  filter(!is.na(Latitude)) %>% 
-  filter(!is.na(Longitude))
+load("./../data/00_filtered/00-data_benthos-top_30.RData")
 
+```
 
-#Converts the coordinates in the database in an sf object
+# Load summarized monitoring time range
 
-data_benthos_join <- data_benthos %>% 
-   st_as_sf(., coords = c("Longitude", "Latitude")) 
+```{r}
 
-# Add a CRS to the database (CRS = GWS84, ESPG = 4326)
-st_crs(data_benthos_join) <- 4326
-
-# Joins the location sites to the EEZs to get the real names $SOVEREIGN1
-
-data_benthos_join <- st_join(data_benthos_join, data_eez)
-
-# Get top 30 from data_reefs
-
-top_30 <- data_reefs %>% 
-  select(pos, SOVEREIGN1) %>% 
-  slice(1:30) 
-
-temp <- top_30$SOVEREIGN1
-
-# Get top 30 from the database
-
-data_benthos_30 <- data_benthos_join %>% 
-  filter(SOVEREIGN1 %in% temp)
+load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
 
 ```
 
@@ -156,14 +134,7 @@ data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-
 
 # 1. Load data ----
 
-data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") %>% 
-  filter(!is.na(Latitude) & !is.na(Longitude) & !is.na(Year)) %>%
-  group_by(Area, Country, Location, Site, Latitude, Longitude) %>% 
-  summarise(interval_years = max(Year, na.rm = TRUE) - min(Year, na.rm = TRUE)) %>%
-  ungroup() %>% 
-  mutate(interval_class = cut(interval_years, 
-                              breaks = c(-Inf, 1, 5, 10, 20, Inf),
-                              labels = c("1", "2-5", "6-10", "11-20", ">20")))
+load("./../data/00_filtered/00-data_benthos-top_30.RData")
 
 # Extracts a limited amount of datasets
 benthos_red <- data_benthos_30 %>% 
@@ -182,7 +153,7 @@ benthos_red <- st_join(benthos_red,data_eez)
 
 ```
 
-# Background maps and sites location - GLOBAL
+# Background maps and sites location - GLOBAL 30
 
 ```{r}
 
@@ -190,29 +161,49 @@ benthos_red <- st_join(benthos_red,data_eez)
 
 # 1.1 Major islands --
 
-land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp")
+land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp") %>%
+  st_transform(., crs = "+proj=moll")
 
 # 1.2 Minor islands --
 
-land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp")
+land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp") %>%   st_transform(., crs = "+proj=moll")
 
 # 1.3 Reefs and atolls --
 
-land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
+land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp") %>% 
+  st_transform(., crs = "+proj=moll")
 
-# 2. Make the map ----
 
-data_benthos %>%  
+
+data_benthos_tRange <- data_benthos_tRange %>% 
+  st_as_sf(., coords = c("Longitude", "Latitude"))
+
+# Add a CRS to the database (CRS = GWS84, ESPG = 4326)
+st_crs(data_benthos_tRange) <- 4326
+
+
+data_benthos_tRange <- data_benthos_tRange %>% 
+  st_transform(., crs = "+proj=moll")
+
+# 2. Make the map ---- Using Mollweide projection
+
+data_benthos_tRange %>%  
   ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_point(aes(x= Longitude, y= Latitude, color = interval_class), size= 1) 
+  geom_sf(data = data_benthos_tRange, aes(col = interval_class)) +
+  theme(panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank())
+             
+             
   
 
-ggsave("./../figs/01-map_site-location-global.png", width = 12, height = 6)
+ggsave("./../figs/01-map_site-location-global30_.png", width = 12, height = 6)
 
-
+ 
 
 ```
 
@@ -244,8 +235,8 @@ temp <- data_benthos_30 %>%
   filter(SOVEREIGN1 == "Maldives") 
 
 
-  # Create the map
-  ggplot() +
+# Create the map
+ggplot() +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
@@ -257,21 +248,25 @@ temp <- data_benthos_30 %>%
   #Focus on the Maldives
   coord_sf(xlim = c(65, 80), ylim = c(-5, 10), expand = FALSE) 
   
+  
   # GLOBAL MAP - Maldives
+  
+data_test <- data_test %>% 
+  st_transform(., crs = "+proj=moll")
+  
   ggplot() +
+  # Red EEZ
+  geom_sf(data = data_test, col = "firebrick2", fill = "firebrick2", alpha = 0.7) +
+  #Blue EEZ
+  #geom_sf(data = data_test, col = "dodgerblue4", fill = "dodgerblue4", alpha = 0.7) +
   geom_sf(data = land_major, fill = "grey", col = "grey") +
   geom_sf(data = land_minor, fill = "grey", col = "grey") +
   geom_sf(data = land_atolls, fill = "grey", col = "grey") +
-  # Adding the EEZ
-  geom_sf(data = data_test, col = "black", fill = "cadetblue2") +
-    theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank())
+  # Theme elements
+  theme(panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank())
         
   
 
