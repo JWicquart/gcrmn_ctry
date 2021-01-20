@@ -104,7 +104,7 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>%
 ```{r}
 
 # Import database 
-data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") 
+data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv")
 
 #Converts the coordinates in the database in an sf object
 
