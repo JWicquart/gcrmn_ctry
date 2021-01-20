@@ -48,7 +48,7 @@ theme_set(theme_graph())
 
 # 1. Load data ----
 
-load(file = "./../data/reefs.eez.Rdata")
+load(file = "./../data/reefs.eez.RData")
 
 # 2. Transform to an sf object ----
 
@@ -135,7 +135,7 @@ data_benthos_30 <- data_benthos_join %>%
 
 ```
 
-# 4. Adding time range (summarized dataset)
+# 4. Defining time range (summarized dataset)
 
 ```{r}
 # 1. Load data ----
@@ -152,6 +152,28 @@ data_benthos_tRange <- data_benthos %>%
                               labels = c("1", "2-5", "6-10", "11-20", ">20")))
 
 
+data_benthos_tRange <- data_benthos_tRange %>% 
+  # Set as sf object
+   st_as_sf(., coords = c("Longitude", "Latitude")) 
+
+# Add a CRS to the database (CRS = GWS84, ESPG = 4326)
+st_crs(data_benthos_tRange) <- 4326
+
+# Join the location sites to the EEZs to get the real names $SOVEREIGN1
+data_benthos_tRange <- st_join(data_benthos_tRange, data_eez)
+
+# Get top 30 from data_reefs
+
+top_30 <- data_reefs %>% 
+  select(pos, SOVEREIGN1) %>% 
+  slice(1:30) 
+
+temp <- top_30$SOVEREIGN1
+
+# Get top 30 from the database
+
+data_benthos_tRange <- data_benthos_tRange %>% 
+  filter(SOVEREIGN1 %in% temp)
 
 ```
 
