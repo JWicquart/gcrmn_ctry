@@ -1,0 +1,294 @@
+---
+title: "Analyses - Maps"
+author : "Nina Prasil & Jeremy Wicquart"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: "cosmo"
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+
+```
+
+# 1. Import functions, packages and data
+
+```{r base}
+
+# 1. Source functions ----
+
+source("functions/graphical_par.R")
+source("functions/theme_graph_2.R")
+
+# 2. Required packages ----
+
+library(tidyverse) # Core tidyverse packages
+library(readxl) # To read excel files
+library(sf) # To plot maps
+library(formattable) # For interactive html tables
+library(DT) # For interactive html tables
+
+# 3. Set default ggplot theme ----
+
+theme_set(theme_graph_2())
+
+# 4. Define the CRS for the global map ----
+
+crs_global <- "+proj=moll"
+
+# 5. Import data ----
+
+# 5.1 Data benthos top 30 (summarized, with time range) --
+
+load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
+
+# 5.2 Data benthos top 30 (raw) --
+
+load("./../data/00_filtered/00-data_benthos-top_30.RData")
+
+# 5.3 EEZ data --
+
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
+
+# 5.4 Background data map --
+
+land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp") 
+
+land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp") 
+
+land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
+
+# 5.5 Create the background --
+
+lats <- c(90:-90, -90:90, 90)
+longs <- c(rep(c(180, -180), each = 181), 180)
+
+world_map_background <- list(cbind(longs, lats)) %>%
+  st_polygon() %>%
+  st_sfc(crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") %>% 
+  st_sf() %>%
+  st_transform(crs = crs_global)
+
+# 5.6 Boundary data --
+
+data_boundary <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
+
+```
+
+# 3. Maps
+
+
+
+## 3.2. Top 30 - Background maps and sites location - 
+
+! Mollweide projection used
+
+```{r}
+
+# 1. Load background map data ----
+
+# 1.1 Major islands -- mollweide
+
+land_major_moll <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp") %>%
+  st_transform(., crs = "+proj=moll")
+
+# 1.2 Minor islands -- mollweide
+
+land_minor_moll <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp") %>%   st_transform(., crs = "+proj=moll")
+
+# 1.3 Reefs and atolls -- mollweide
+
+land_atolls_moll <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp") %>% 
+  st_transform(., crs = "+proj=moll")
+
+# 1.4. Data benthos -- mollweide 
+
+data_benthos_range_moll <- data_benthos_range %>% 
+  st_transform(., crs = "+proj=moll")
+
+# 1.5. EEZ -- mollweide
+
+data_eez_moll <- data_eez %>% 
+  st_transform(., crs = "+proj=moll")
+
+# 2. Make the map ---- Using Mollweide projection
+
+data_benthos_range_moll %>%  
+  ggplot() +
+  geom_sf(data = data_eez_30_moll, fill = col_eez, color = col_eez) +
+  geom_sf(data = land_major_moll, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor_moll, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_atolls_moll, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = data_benthos_range_moll, aes(col = interval_class), size = 0.5) +
+  # Adding variation to the main theme
+  # Theme lengend
+  scale_color_manual(values = palette_trange, name = "Time range (years)") +
+  # Increase size of the legend keys
+  guides(colour = guide_legend(override.aes = list(size = 4)))
+             
+             
+  
+
+ggsave("./../figs/01-map_site-location-global30_.png", width = 12, height = 6)
+
+ 
+
+```
+
+## 3.3. Maldives 
+ ! Bbox and global
+
+```{r warning=FALSE}
+
+## Load datasets
+load("./../data/00_filtered/00-data_benthos-top_30.RData")
+load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
+
+## Load map backgrounds
+# 1.1 Major islands --
+
+land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp") 
+
+# 1.2 Minor islands --
+
+land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp") 
+
+# 1.3 Reefs and atolls --
+
+land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
+
+####################################################################################
+
+## Select the data
+
+data_test <- data_eez %>% 
+  filter(SOVEREIGN1 == "Maldives")
+
+temp <- data_benthos_range %>% 
+  # Select the Maldives only
+  filter(SOVEREIGN1 == "Maldives") 
+
+
+# MALDIVES -- ZOOM
+
+ggplot() +
+  # Adding the EEZ
+  geom_sf(data = data_test, fill = col_eez, color = col_eez) +
+  # Adding territories
+  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  # Adding the location sites of the Maldives
+  geom_sf(data = temp, aes(col = interval_class)) +
+  # Zoom on the Maldives
+  coord_sf(xlim = c(68, 78), ylim = c(-4, 9), expand = FALSE) +
+  # Theme lengend
+  scale_color_manual(values = palette_trange, name = "Time range (years)") +
+  # Increase size of the legend keys
+  guides(colour = guide_legend(override.aes = list(size = 4)))
+  
+
+# GLOBAL MAP - Maldives - Mollweide
+  
+data_test_moll <- data_test %>% 
+  st_transform(., crs = "+proj=moll")
+  
+  ggplot() +
+  # Red EEZ
+  geom_sf(data = data_test_moll, col = "firebrick2", fill = "firebrick2", alpha = 0.7) +
+  #Blue EEZ
+  #geom_sf(data = data_test, col = "dodgerblue4", fill = "dodgerblue4", alpha = 0.7) +
+  geom_sf(data = land_major, fill = "grey", col = "grey") +
+  geom_sf(data = land_minor, fill = "grey", col = "grey") +
+  geom_sf(data = land_atolls, fill = "grey", col = "grey") +
+  # Theme elements
+  theme(panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank())
+  
+################################# 
+ggplot() +
+  # Red EEZ
+  geom_sf(data = data_test_moll, col = "firebrick2", fill = "firebrick2", alpha = 0.7) +
+  geom_sf(data = land_major_moll, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor_moll, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_atolls_moll, fill = col_fill_map, col = col_color_map) +  
+  # Theme elements
+  theme(panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank())
+  
+
+```
+
+## 3.4. Indonesia
+
+```{r}
+data_test <- data_eez %>% 
+  filter(SOVEREIGN1 == "Indonesia")
+
+temp <- data_benthos_range %>% 
+  # Select the Maldives only
+  filter(SOVEREIGN1 == "Indonesia") 
+
+  # Create the map
+ggplot() +
+    # Adding the EEZ
+  geom_sf(data = data_test) +
+  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  # Adding the location sites
+  geom_sf(data = temp, aes(col = interval_class)) +
+  # Zoom in
+  coord_sf(xlim = c(90, 145), ylim = c(-15, 10), expand = FALSE) +
+  # Theme lengend
+  scale_color_manual(values = palette_trange, name = "Time range (years)") +
+  # Increase size of the legend keys
+  guides(colour = guide_legend(override.aes = list(size = 4)))
+  
+
+
+# Plot EEZ MICRONESIA
+
+data_eez %>% 
+  filter(SOVEREIGN1 == "Tonga" )%>% 
+  ggplot() +
+  geom_sf() +
+  coord_sf(xlim = c(155, 180), ylim = c(0, 20), expand = FALSE)
+
+```
+
+## Map centrée pacifique
+
+```{r}
+
+land_major_mollbis <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp") %>%
+  st_transform(., crs = "+proj=moll +x_0=0 +y_0=0 +lon_0=160 +lat_0=0")
+
+ggplot() +
+  geom_sf(data = land_major_mollbis, fill = col_fill_map, col = col_color_map)
+```
+
+# Reproducibility
+
+```{r reprod}
+
+# 1. Reproducibility ----
+
+sessionInfo()
+
+```
+
+---
+Nina PRASIL & Jeremy WICQUART | `r format(Sys.time())`

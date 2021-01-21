@@ -131,7 +131,7 @@ data_benthos_range <- data_benthos %>%
   mutate(Longitude = st_coordinates(.)[,"X"],
          Latitude = st_coordinates(.)[,"Y"]) %>% 
   st_drop_geometry() %>% 
-  group_by(Area, Country, Location, Site, Latitude, Longitude) %>% 
+  group_by(Area, Country, Location, Site, Latitude, Longitude, SOVEREIGN1) %>% 
   summarise(interval_years = max(Year, na.rm = TRUE) - min(Year, na.rm = TRUE)) %>%
   ungroup() %>% 
   mutate(interval_class = cut(interval_years, 
