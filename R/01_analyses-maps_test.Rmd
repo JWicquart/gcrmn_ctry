@@ -280,6 +280,43 @@ ggplot() +
   geom_sf(data = land_major_mollbis, fill = col_fill_map, col = col_color_map)
 ```
 
+# To dou
+
+```{r}
+
+
+# 1. Load and transform the data ----
+
+world_map1 <- fortify(maps::map(fill = TRUE, plot = FALSE))
+world_map2 <- world_map1
+world_map2$long <- world_map2$long + 360
+world_map2$group <- world_map2$group + max(world_map2$group) + 1
+world_map <- rbind(world_map1, world_map2)
+
+# 2. Generate breaks and labels for longitude ----
+
+# Breaks
+breaks_long <- c(0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300)
+
+# Labels
+labels_long <- c("0°", "30°E", "60°E", "90°E", "120°E", "150°E", "180°", "150°W", "120°W", "90°W", "60°W")
+
+# 3. Generate breaks and labels for latitude ----
+
+# Breaks
+breaks_lat <- seq(-90, 90, 15)
+
+# Labels
+labels_lat <- labels_long_lat(vector = breaks_lat, type = "latitude")
+
+# 4. Remove useless objects ----
+
+rm(world_map1, world_map2)
+
+
+```
+
+
 # Reproducibility
 
 ```{r reprod}
