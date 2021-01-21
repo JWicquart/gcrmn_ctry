@@ -321,7 +321,20 @@ data_test_moll <- data_test %>%
   panel.grid.minor = element_blank(),
   panel.border = element_blank(),
   panel.background = element_blank())
-        
+  
+################################# 
+ggplot() +
+  # Red EEZ
+  geom_sf(data = data_test_moll, col = "firebrick2", fill = "firebrick2", alpha = 0.7) +
+  geom_sf(data = land_major_moll, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor_moll, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_atolls_moll, fill = col_fill_map, col = col_color_map) +  
+  # Theme elements
+  theme(panel.grid.major = element_blank(),
+  panel.grid.minor = element_blank(),
+  panel.border = element_blank(),
+  panel.background = element_blank())
+  
 
 ```
 
@@ -331,21 +344,26 @@ data_test_moll <- data_test %>%
 data_test <- data_eez %>% 
   filter(SOVEREIGN1 == "Indonesia")
 
-data_benthos_30 %>% 
+temp <- data_benthos_tRange %>% 
   # Select the Maldives only
-  filter(SOVEREIGN1 == "Indonesia") %>% 
+  filter(SOVEREIGN1 == "Indonesia") 
+
   # Create the map
-  ggplot() +
+ggplot() +
+    # Adding the EEZ
+  geom_sf(data = data_test) +
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  # Adding the EEZ
-  geom_sf(data = data_test) +
   # Adding the location sites
-  geom_sf(col = "red") +
-  xlab("Longitude") + ylab("Latitude") +
-  #Focus on the Maldives
-  coord_sf(xlim = c(90, 145), ylim = c(-15, 10), expand = FALSE)
+  geom_sf(data = temp, aes(col = interval_class)) +
+  # Zoom in
+  coord_sf(xlim = c(90, 145), ylim = c(-15, 10), expand = FALSE) +
+  # Theme lengend
+  scale_color_manual(values = palette_trange, name = "Time range (years)") +
+  # Increase size of the legend keys
+  guides(colour = guide_legend(override.aes = list(size = 4)))
+  
 
 
 # Plot EEZ MICRONESIA
