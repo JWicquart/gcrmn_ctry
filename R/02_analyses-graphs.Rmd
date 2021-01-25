@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 
 ```
 
-# 1. Import functions, packages and data
+# Import functions, packages and data
 
 ```{r base}
 
@@ -58,7 +58,7 @@ data_benthos <- data_benthos %>%
 
 # 1. Load data ----
 
-load(file = "./../data/reefs.eez.Rdata")
+load(file = "./../data/reefs.eez.RData")
 
 # 2. Transform to an sf object ----
 
@@ -124,6 +124,15 @@ for (i in unique(data_years$SOVEREIGN1)) {
 
 }
 
+# 3. Verification
+
+temp <- data_years %>% 
+  filter(SOVEREIGN1 == "Maldives")
+
+verif <- data_benthos %>% 
+  filter(SOVEREIGN1 == "Maldives", Year == "2015") %>% 
+  distinct(.)
+
 ```
 
 # Methods used
@@ -157,13 +166,18 @@ data_method <- data_benthos %>%
                                           "perpendicular intercept transect",
                                           "video-transect",
                                           "other") ~ "Other methods",
-                            TRUE ~ "Unknown")) %>% 
+                            TRUE ~ "Unknown"))  %>% 
   group_by(Method, SOVEREIGN1) %>% 
   count(name = "Abs") %>% 
   ungroup() %>% 
+  pivot_wider(., names_from = Method, values_from = Abs, values_fill = 0) %>% 
+  pivot_longer(., cols = c("Photo-quadrat", "PIT", "LIT", "Visual census", "Other methods", "Unknown"), names_to = "Method") %>% 
+  rename(., Abs = value) %>% 
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
-         Method = as.factor(Method))
+        Method = as.factor(Method)) %>% 
+  ungroup() %>% 
+  arrange(SOVEREIGN1)
 
 # 2. Make the loop ----
 
@@ -174,13 +188,16 @@ for (i in unique(data_method$SOVEREIGN1)) {
   
   plot_i <- ggplot(data_method_i, aes(x = reorder(Method, Rel), y = Rel, label = paste0(round(Rel, 0), " %"))) +
     geom_bar(stat = "identity", col = "black", fill = col_fill_graph) +
-    geom_text(hjust = -0.5) +
+    geom_text(hjust = -0.1) +
     coord_flip() +
     labs(x = NULL, y = "Percentage of sites") +
     theme(axis.text = element_text(size = 12),
           axis.title = element_text(size = 16))
   
-  ggsave(plot_i, filename = paste0("../figs/02_graph-transects-methods_", tolower(as.character(i)), ".png"))
+  ggsave(plot_i, 
+         filename = paste0("../figs/02_graph-transects-methods_", tolower(as.character(i)), ".png"),
+         width = 7,
+         height = 4)
 
 }
 
