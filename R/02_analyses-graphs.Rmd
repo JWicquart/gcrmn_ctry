@@ -170,9 +170,7 @@ data_method <- data_benthos %>%
   group_by(Method, SOVEREIGN1) %>% 
   count(name = "Abs") %>% 
   ungroup() %>% 
-  pivot_wider(., names_from = Method, values_from = Abs, values_fill = 0) %>% 
-  pivot_longer(., cols = c("Photo-quadrat", "PIT", "LIT", "Visual census", "Other methods", "Unknown"), names_to = "Method") %>% 
-  rename(., Abs = value) %>% 
+  complete(Method, SOVEREIGN1, fill = list(Abs = 0)) %>% 
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
         Method = as.factor(Method)) %>% 
