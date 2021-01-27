@@ -86,10 +86,17 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>%
 ```{r}
 
 # Import database 
-data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv")
+#data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv")
 
-#data_benthos <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv")
+data_benthos <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv")
+
+# Delete datasets belonging to Reef Life Surfey and XL Catlin Seaview -> too different, induce a bias
   
+data_benthos <- data_benthos %>% 
+   filter(!(DatasetID %in% c("XLCA1", "XLCA2", "XLCA3", "XLCA4", "XLCA5",
+                            "PACN1.1", "PACN1.2", "PACN1.3", "PACN1.4",
+                            "TIAH1", "RFCK1")))
+
 # Converts the coordinates in the database in an sf object
 
 data_benthos_join <- data_benthos %>% 
