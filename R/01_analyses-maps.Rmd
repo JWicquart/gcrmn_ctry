@@ -86,6 +86,11 @@ world_map_background <- list(cbind(longs, lats)) %>%
 
 data_boundary <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
 
+# 5.7. Coral distribution data ----
+
+coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") 
+#%>%  mutate(long = ifelse(long < 0, long + 360, long))
+
 ```
 
 # 2. Global maps
@@ -165,6 +170,7 @@ for (i in list_classic) {
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_point(data = coral_distribution, aes(x = long, y = lat), color = "azure3", size = rel(0.2), alpha = 0.5) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
@@ -172,9 +178,7 @@ for (i in list_classic) {
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # North bar and scale
-  annotation_north_arrow(location = "bl", which_north = "true", height = unit(1, "cm"),
-  width = unit(1, "cm"),) +
+  # Scalebar
   annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
