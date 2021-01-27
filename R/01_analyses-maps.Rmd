@@ -37,6 +37,7 @@ source("functions/theme_map.R")
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
+library(ggspatial) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 
@@ -54,6 +55,10 @@ crs_global <- "+proj=moll"
 
 load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
 
+# transform interval_class in levels
+
+levels(data_benthos_range$interval_class)
+
 # 5.2 Data benthos top 30 (raw) --
 
 load("./../data/00_filtered/00-data_benthos-top_30.RData")
@@ -63,11 +68,11 @@ load("./../data/00_filtered/00-data_benthos-top_30.RData")
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
 
 # 5.4 Background data map --
+land_boundary <- read_sf("../data/01_maps/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp")
 
 land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp") 
 
 land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp") 
-
 land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
 
 # 5.5 Create the background --
@@ -93,29 +98,29 @@ data_boundary <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
 
 # 1. Transform data to desired projection (Mollweide) ----
 
-data_eez <- data_eez %>% 
+data_eez_trans <- data_eez %>% 
   st_transform(., crs = crs_global)
 
-land_major <- land_major %>% 
+land_major_trans <- land_major %>% 
     st_transform(., crs = crs_global)
 
-land_minor <- land_minor %>% 
+land_minor_trans <- land_minor %>% 
   st_transform(., crs = crs_global)
 
-land_atolls <- land_atolls %>% 
+land_atolls_trans <- land_atolls %>% 
   st_transform(., crs = crs_global)
 
 # 2. Create all the plots ----
 
-results <- data_eez %>%
+results <- data_eez_trans %>%
   filter(SOVEREIGN1 %in% c("Belize", "Fiji", "France", "Egypt", "Maldives", "Indonesia")) %>% 
   group_by(SOVEREIGN1) %>%
   do(plot = ggplot() +
       geom_sf(data = world_map_background, fill = "#56B4E950", color = "grey30", size = 0.5/.pt) +
-      geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-      geom_sf(data = ., fill = "red") +
-      geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-      geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+      geom_sf(data = land_major_trans, fill = col_fill_map, col = col_color_map) +
+      geom_sf(data = ., col = col_eez_g, fill = col_eez_g, alpha = 0.7) +
+      geom_sf(data = land_minor_trans, fill = col_fill_map, col = col_color_map) +
+      geom_sf(data = land_atolls_trans, fill = col_fill_map, col = col_color_map) +
       theme(strip.background = element_rect(fill = "transparent", color = NA),
             plot.background = element_rect(fill = "transparent", color = NA),
             panel.grid = element_blank(),
@@ -165,19 +170,30 @@ for (i in list_classic) {
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
   geom_sf(data = data_benthos_i, aes(col = interval_class)) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)") +
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE)
+           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
+  # North bar and scale
+  annotation_north_arrow(location = "bl", which_north = "true", height = unit(1, "cm"),
+  width = unit(1, "cm"),) +
+  annotation_scale(location = "bl") +
+  # Aesthetics
+  guides(colour = guide_legend(override.aes = list(size = 4))) +
+  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) 
 
   ggsave(plot_i, filename = paste0("../figs/01_individual-map-by-country_", tolower(as.character(i)), ".png"))
   
 }
 
+
+  
+
+
 ```
+
 
 # 3.2 Overlap maps
 
@@ -193,10 +209,30 @@ for (i in list_classic) {
 
 ```{r}
 
+france_area <- data_benthos %>% 
+  st_drop_geometry() %>% 
+  distinct(Area, SOVEREIGN1, Archipelago, .keep_all = T) %>% 
+  filter(SOVEREIGN1 == "France") 
+
+france_eez <- inner_join(france_area, data_eez)
+
+temp <- data_benthos_range %>% 
+  filter(SOVEREIGN1 == "France", Area == "Pacific")
 
 
-
-
+ggplot() +
+  # Adding the EEZ
+  geom_sf(data = france_eez$geometry, fill = col_eez, color = col_eez) +
+  # Adding territories
+  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  scale_color_manual(values = palette_trange, name = "Time range (years)") +
+  guides(colour = guide_legend(override.aes = list(size = 4))) +
+  # Define boundaries
+  coord_sf(xlim = c(-179, 180), 
+           ylim = c(-40, 40), expand = FALSE)
+  
 ```
 
 # 3.3.2 USA

@@ -16,3 +16,4 @@ col_background_map <- "#e4f1fe"
 col_facet <- "#ECF0F1"
 palette_trange <- c("#3fc380", "#5c97bf", "#fad859", "#eb9532", "#e74c3c")
 col_eez <- "#e4f1fe"
+col_eez_g <- "firebrick2"

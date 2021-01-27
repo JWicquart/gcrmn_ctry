@@ -33,6 +33,7 @@ source("functions/theme_graph_2.R")
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
+library(maps)
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 
