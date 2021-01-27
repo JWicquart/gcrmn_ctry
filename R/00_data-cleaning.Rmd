@@ -24,21 +24,10 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 
 ```{r base}
 
-# 1. Source functions ----
-
-source("functions/graphical_par.R")
-source("functions/theme_graph.R")
-
-# 2. Required packages ----
+# 1. Required packages ----
 
 library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
-library(formattable) # For interactive html tables
-library(DT) # For interactive html tables
-
-# 3. Set default ggplot theme ----
-
-theme_set(theme_graph())
 
 ```
 
@@ -75,11 +64,9 @@ data_reefs <- data_reefs %>%
   mutate(total_area_abs = round(as.numeric(total_area_abs), 3),
          total_area_rel = round(as.numeric(total_area_rel), 3))
 
-# 4. Make the table ----
+# 4. Remove useless objects ----
 
-#data_reefs %>% 
-#  formattable(.) %>% 
-#  as.datatable(., rownames = FALSE, colnames = c("N°", "Country", "Area (km²)", "Relative (%)"))
+rm(reefs.eez)
 
 ```
 
@@ -92,11 +79,6 @@ data_reefs <- data_reefs %>%
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
   select(SOVEREIGN1)
 
-# 2. Make the map ----
-
-#ggplot() +
-#  geom_sf(data = data_eez)
-
 ```
 
 # 3. Defining top 30
@@ -104,17 +86,19 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>%
 ```{r}
 
 # Import database 
-data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") 
+data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv")
 
-#Converts the coordinates in the database in an sf object
+#data_benthos <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv")
+  
+# Converts the coordinates in the database in an sf object
 
 data_benthos_join <- data_benthos %>% 
-  # Remove non-filled? sites location
-  filter(!is.na(Latitude) & !is.na(Longitude) & !is.na(Year)) %>%
+  # Remove NA
+  drop_na(Latitude, Longitude, Year) %>%
   # Set as sf object
-   st_as_sf(., coords = c("Longitude", "Latitude")) 
+   st_as_sf(., coords = c("Longitude", "Latitude"))
 
-# Add a CRS to the database (CRS = GWS84, ESPG = 4326)
+# Add a CRS to the database (CRS = WGS84, ESPG = 4326)
 st_crs(data_benthos_join) <- 4326
 
 # Join the location sites to the EEZs to get the real names $SOVEREIGN1
@@ -126,71 +110,41 @@ top_30 <- data_reefs %>%
   select(pos, SOVEREIGN1) %>% 
   slice(1:30) 
 
-temp <- top_30$SOVEREIGN1
+# Extract top 30 countries from data_benthos
 
-# Get top 30 from the database
+data_benthos <- data_benthos_join %>% 
+  filter(SOVEREIGN1 %in% unique(top_30$SOVEREIGN1))
 
-data_benthos_30 <- data_benthos_join %>% 
-  filter(SOVEREIGN1 %in% temp)
+# Export to RData
+
+save(data_benthos, file = "./../data/00_filtered/00-data_benthos-top_30.RData")
 
 ```
 
 # 4. Defining time range (summarized dataset)
 
 ```{r}
+
 # 1. Load data ----
 
-#data_benthos <- read.csv2("./../data/03-merge_all_all_all_benthos_NA.csv") 
-
-data_benthos_tRange <- data_benthos %>% 
-  filter(!is.na(Latitude) & !is.na(Longitude) & !is.na(Year)) %>%
-  group_by(Area, Country, Location, Site, Latitude, Longitude) %>% 
+data_benthos_range <- data_benthos %>% 
+  mutate(Longitude = st_coordinates(.)[,"X"],
+         Latitude = st_coordinates(.)[,"Y"]) %>% 
+  st_drop_geometry() %>% 
+  group_by(Area, Country, Location, Site, Latitude, Longitude, SOVEREIGN1) %>% 
   summarise(interval_years = max(Year, na.rm = TRUE) - min(Year, na.rm = TRUE)) %>%
   ungroup() %>% 
   mutate(interval_class = cut(interval_years, 
                               breaks = c(-Inf, 1, 5, 10, 20, Inf),
-                              labels = c("1", "2-5", "6-10", "11-20", ">20")))
+                              labels = c("1", "2-5", "6-10", "11-20", ">20"))) %>% 
+  st_as_sf(., coords = c("Longitude", "Latitude"))
 
+# Add a CRS to the database (CRS = WGS84, ESPG = 4326)
+st_crs(data_benthos_range) <- 4326
 
-data_benthos_tRange <- data_benthos_tRange %>% 
-  # Set as sf object
-   st_as_sf(., coords = c("Longitude", "Latitude")) 
+# Export to RData
 
-# Add a CRS to the database (CRS = GWS84, ESPG = 4326)
-st_crs(data_benthos_tRange) <- 4326
-
-# Join the location sites to the EEZs to get the real names $SOVEREIGN1
-data_benthos_tRange <- st_join(data_benthos_tRange, data_eez)
-
-# Get top 30 from data_reefs
-
-top_30 <- data_reefs %>% 
-  select(pos, SOVEREIGN1) %>% 
-  slice(1:30) 
-
-temp <- top_30$SOVEREIGN1
-
-# Get top 30 from the database
-
-data_benthos_tRange <- data_benthos_tRange %>% 
-  filter(SOVEREIGN1 %in% temp)
-
-```
-
-
-# 5. Save objects as RData
-
-```{r}
-
-save(data_benthos_30, 
-     file = "./../data/00_filtered/00-data_benthos-top_30.RData")
-
-save(data_benthos_tRange, 
+save(data_benthos_range, 
      file = "./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
 
-# POssibility to combine both :
-# save(dta_benthos_30, data_benthos_tRange, file = "./../data/00_filtered/00-data_benthos-filtered.RData")
-
-# Test
-#load("./../data/00_filtered/00-data_benthos-top_30.RData")
 ```
