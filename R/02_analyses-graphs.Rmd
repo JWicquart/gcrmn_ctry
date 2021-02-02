@@ -185,27 +185,6 @@ for (i in unique(data_method$SOVEREIGN1)) {
   data_method_i <- data_method %>% 
     filter(SOVEREIGN1 == i)
   
-  plot_i <- ggplot(data_method_i, aes(x = reorder(Method, Rel), y = Rel, label = paste0(round(Rel, 0), " %"))) +
-    geom_bar(stat = "identity", col = "black", fill = col_fill_graph) +
-    geom_text(hjust = -0.2) +
-    coord_flip() +
-    labs(x = NULL, y = "Percentage of sites") +
-    theme(axis.text = element_text(size = 12),
-          axis.title = element_text(size = 16)) +
-    scale_y_continuous(breaks = c(25, 50, 75, 100), limits = c(0,110))
-  
-  ggsave(plot_i, 
-         filename = paste0("../figs/02_graph-transects-methods_", tolower(as.character(i)), ".png"),
-         width = 7,
-         height = 4)
-
-}
-
-for (i in unique(data_method$SOVEREIGN1)) {
-  
-  data_method_i <- data_method %>% 
-    filter(SOVEREIGN1 == i)
-  
   plot_i <- ggplot(data_method_i, aes(x = Method, y = Rel, label = paste0(round(Rel, 0), " %"))) +
     geom_bar(stat = "identity", col = "black", fill = col_fill_graph) +
     geom_text(hjust = -0.2) +
