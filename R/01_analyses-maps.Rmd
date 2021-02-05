@@ -99,7 +99,8 @@ Need to merge all three files of points and do the same for the polygons to crea
 # 5.8. MPAs from The protected planet database
 info_mpa <- read.csv("./../data/02_mpa/WDPA_WDOECM_marine_csv/WDPA_WDOECM_marine_csv.csv")
 
-data_mpa0 <- read_sf("./../data/02_mpa/WDPA_WDOECM_wdpa_shp-polygons_0.shp")
+data_mpa0 <- read_sf("./../data/WDPA_WDOECM_wdpa_shp0/WDPA_WDOECM_wdpa_shp-polygons.shp") %>% 
+  filter(MARINE != 0)
 ```
 
 
