@@ -88,19 +88,49 @@ data_boundary <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
 
 # 5.7. Coral distribution data ----
 
-coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") 
-#%>%  mutate(long = ifelse(long < 0, long + 360, long))
+coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") %>% 
+  st_as_sf(., coords = c("long", "lat")) 
+
+# Add a CRS to the database (CRS = WGS84, ESPG = 4326)
+
+st_crs(coral_distribution) <- 4326
 
 
 ```
 # 1.2. MPAs
 Need to merge all three files of points and do the same for the polygons to create a layer of points and one of polygons
 ```{r}
+
+## MPAs from MPAtlas
+
+data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") %>% 
+  st_sfc(crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+ggplot() +
+  # Adding the EEZ
+  geom_sf(data = data_eez, fill = col_eez, color = col_eez_b, alpha = 0.8) +
+  # Adding territories
+  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = coral_distribution, 
+          color = "azure3", 
+          size = rel(0.2), 
+          alpha = 0.5,
+          show.legend = FALSE) +
+  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
+  # Adding the location sites
+  geom_sf(data = data_mpa) +
+  # Aesthetics
+  theme(axis.title = element_blank())
+
 # 5.8. MPAs from The protected planet database
 info_mpa <- read.csv("./../data/02_mpa/WDPA_WDOECM_marine_csv/WDPA_WDOECM_marine_csv.csv")
 
 data_mpa0 <- read_sf("./../data/WDPA_WDOECM_wdpa_shp0/WDPA_WDOECM_wdpa_shp-polygons.shp") %>% 
   filter(MARINE != 0)
+
+
 ```
 
 
@@ -181,7 +211,7 @@ for (i in list_classic) {
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
+  geom_sf(data = coral_distribution, 
              color = "azure3", size = rel(0.2), alpha = 0.5,
              show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
@@ -256,7 +286,24 @@ data_benthos_ovlp <- data_benthos %>%
 # 3.3.1 France
 
 ```{r}
-#1. Common datasets
+#1. Data MPAs
+## Select french MPAs with coral reefs
+
+mpa_fr <- data_mpa %>% 
+  st_drop_geometry() %>%
+  filter(sovereign == "FRA") %>% 
+  #distinct(country, .keep_all = T) %>% 
+  filter(is_mpa==1) %>% 
+  arrange(country)
+
+amp_coral_fr <- data_mpa %>% 
+  filter(country %in% c("BLM", "GLP", "MAF", "MTQ", "MYT", "NCL", "PYF", "REU", "BLM;GLP;MAF;MTQ"	)) %>% 
+  arrange(country)
+
+
+
+## Calculate the number and surface of MPAs in tropical waters
+
 
 #france_area <- data_benthos %>% st_drop_geometry() %>% distinct(SOVEREIGN1, Location, .keep_all = T) %>%  filter(SOVEREIGN1 == "France") %>% arrange(Archipelago, Location)
 
