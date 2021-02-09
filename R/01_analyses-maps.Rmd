@@ -89,12 +89,20 @@ data_boundary <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
 
 # 5.7. Coral distribution data ----
 
+<<<<<<< HEAD
 coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv")
 #%>%   st_as_sf(., coords = c("long", "lat")) 
+=======
+coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") %>% 
+  st_as_sf(., coords = c("long", "lat"))
+>>>>>>> df77009d7d673f6b7e05863e535c20183609954c
 
 # Add a CRS to the database (CRS = WGS84, ESPG = 4326)
 
 #st_crs(coral_distribution) <- 4326
+
+ggplot() +
+  geom_sf(data = coral_distribution)
 
 
 ```

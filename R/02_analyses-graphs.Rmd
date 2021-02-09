@@ -207,6 +207,44 @@ for (i in unique(data_method$SOVEREIGN1)) {
 
 ```
 
+```{r}
+
+
+data_benthos %>% 
+  select(SOVEREIGN1, Category, Group, Family, Genus, Species) %>% 
+  mutate(Tax_lvl = case_when(!(is.na(Species)) ~ "Species",
+                             !(is.na(Genus)) ~ "Genus",
+                             !(is.na(Family)) ~ "Family",
+                             !(is.na(Group)) ~ "Group",
+                             !(is.na(Category)) ~ "Category")) %>%  
+  select(-Category, -Group, -Family, -Genus, -Species) %>% 
+  group_by(SOVEREIGN1, Tax_lvl) %>%
+  summarise(Absolute = n()) %>% 
+  ungroup(.) %>%
+  group_by(SOVEREIGN1) %>% 
+  mutate(Total = sum(Absolute),
+         Percentage = (100*Absolute)/Total) %>%
+  ggplot(.) + # Plot
+    geom_bar(aes(x = fct_rev(SOVEREIGN1), 
+                 y = Percentage, 
+                 fill = fct_relevel(Tax_lvl, "Species", "Genus", "Family", "Group", "Category")), 
+             stat = "identity") +
+    coord_flip() +
+    scale_fill_manual(name = "Taxonomic level",
+                      breaks = c("Category", "Group", "Family", "Genus", "Species"), 
+                      values = c("#3fc380", "#5c97bf", "#fad859", "#eb9532", "#e74c3c"),
+                      guide = guide_legend(title.position = "top")) +
+    labs(x = NULL) + 
+    theme(legend.position = "top",
+          axis.text.x = element_text(size = 12),
+          axis.text.y = element_text(size = 8))
+
+
+```
+
+
+
+
 # Reproducibility
 
 ```{r reprod}
