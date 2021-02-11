@@ -33,6 +33,7 @@ source("functions/theme_map.R")
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
+library(rgdal)
 library(ggspatial) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
@@ -88,15 +89,19 @@ data_boundary <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
 
 # 5.7. Coral distribution data ----
 
+
+coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv")
+#%>%   st_as_sf(., coords = c("long", "lat")) 
+
 coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") %>% 
   st_as_sf(., coords = c("long", "lat"))
+
 
 # Add a CRS to the database (CRS = WGS84, ESPG = 4326)
 
 st_crs(coral_distribution) <- 4326
 
-ggplot() +
-  geom_sf(data = coral_distribution)
+#ggplot() + geom_sf(data = coral_distribution)
 
 
 ```
@@ -214,13 +219,13 @@ for (i in list_classic) {
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution, 
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
+  geom_sf(data = coral_distribution,
+          col = "azure3", size = rel(0.2), alpha = 0.5,
+          show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_i, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_i, shape = 21,  aes(col = "black", fill =  palette_trange)) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
@@ -316,7 +321,12 @@ land_atolls_fiji <- land_atolls_fiji %>%
   mutate(long = long + 360) %>% 
   bind_rows(land_atolls_fiji, .)
 
-# 1.5 Data benthos range --
+# 1.5 Coral reefs
+
+coral_distribution_fiji <- coral_distribution %>% 
+  mutate(long = ifelse(long < 0, long + 360, long)) 
+
+# 1.6 Data benthos range --
 
 data_benthos_range_fiji <- data_benthos_range %>% 
   filter(SOVEREIGN1 == "Fiji") %>% 
@@ -328,16 +338,23 @@ data_benthos_range_fiji <- data_benthos_range %>%
 # 2. Make the plot ----
 
 ggplot() +
-  geom_polygon(data = data_eez_fiji2, aes(x = long, y = lat, group = group), fill = col_eez, alpha = 0.8) +
+  geom_polygon(data = data_eez_fiji, aes(x = long, y = lat, group = group), fill = col_eez, alpha = 0.8) +
+  geom_point(data = coral_distribution_fiji, aes(x= long, y = lat), 
+             color = "azure3", size = rel(0.2), alpha = 0.5,
+             show.legend = FALSE) +
   geom_polygon(data = land_major_fiji, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
   geom_polygon(data = land_minor_fiji, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
   geom_polygon(data = land_atolls_fiji, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
+  
   geom_point(data = data_benthos_range_fiji, aes(x = long, y = lat, col = interval_class)) +
   guides(colour = guide_legend(override.aes = list(size = 4))) +
   scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  scale_x_continuous(breaks = c(175, 180, 185), labels = c("175°E", "180°", "175°W"), limits = c(172, 185)) +
+  scale_x_continuous(breaks = c(170, 175, 180, 185), labels = c("170°E","175°E", "180°", "175°W"), limits = c(170, 185)) +
   scale_y_continuous(breaks = c(-25, -20, -15, -10), labels = c("25°S", "20°S", "15°S", "10°S"), limits = c(c(-26, -9))) +
-  coord_quickmap()
+  coord_quickmap() +
+  theme(axis.title = element_blank()) 
+  # Scalebar
+  #annotation_scale(location = "bl", plot_unit = "km") 
 
 # 3. Export the map ----
 
