@@ -121,7 +121,7 @@ for (i in unique(data_years$SOVEREIGN1)) {
     lims(x = c(1970, 2020)) +
     labs(x = "Year", y = "Percentage of sites") 
   
-  ggsave(plot_i, filename = paste0("../figs/02_graph-transects-by-year_", tolower(as.character(i)), ".png"))
+  ggsave(plot_i, filename = paste0("../figs/02_graph-transects-by-year_", tolower(as.character(i)), ".png"), height = 4, width = 6)
 
 }
 
