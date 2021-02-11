@@ -200,6 +200,8 @@ list_classic <- data_boundary %>%
   distinct(SOVEREIGN1) %>% 
   pull()
 
+list_classic <- c("Australia")
+
 # 2. Make the loop ----
 
 for (i in list_classic) {
@@ -225,7 +227,7 @@ for (i in list_classic) {
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_i, shape = 21,  aes(col = "black", fill =  palette_trange)) +
+  geom_sf(data = data_benthos_i, shape = 21, col = "black", aes(fill = interval_class)) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
@@ -233,17 +235,12 @@ for (i in list_classic) {
   annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank())
   
-
   ggsave(plot_i, filename = paste0("../figs/01_individual-map-by-country_", tolower(as.character(i)), ".png"))
   
 }
-
-
-  
-
 
 ```
 
