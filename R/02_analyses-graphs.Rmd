@@ -244,16 +244,20 @@ for (i in unique(data_benthos$SOVEREIGN1)) {
                       values = c("#3fc380", "#5c97bf", "#fad859", "#eb9532", "#e74c3c"),
                       guide = guide_legend(title.position = "top"),
                       drop = FALSE) +
+      scale_y_continuous(#name = element_blank(),
+                         breaks = c(0, 25, 50, 75, 100),
+                         labels= c("0 %", "25 %", "50 %", "75 %", "100 %"),
+                         limits = c(0,100)) +
       labs(x = NULL) + 
       theme(legend.position = "top",
-          axis.text.x = element_text(size = 12),
+          axis.title = element_blank(),
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           panel.background = element_blank(),
           panel.border = element_blank(),
           panel.grid.major = element_blank(),
           panel.grid.minor = element_blank(),
-          axis.line.x.bottom =  element_line(colour = "black")) 
+          axis.line.x.bottom =  element_line(colour = "black"))
     
   ggsave(plot_i, 
          filename = paste0("../figs/02_graph-transects-precision-taxo_", tolower(as.character(i)), ".png"),
@@ -261,6 +265,10 @@ for (i in unique(data_benthos$SOVEREIGN1)) {
          height = 2)
 }
 
+
+## Save table 
+
+write_csv2(precision_taxo, "../figs/02_percentage-precision-taxo.csv")
 ```
 
 

@@ -33,6 +33,7 @@ source("functions/theme_map.R")
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
+library(lwgeom)
 library(rgdal)
 library(ggspatial) # To plot maps
 library(formattable) # For interactive html tables
@@ -109,11 +110,71 @@ st_crs(coral_distribution) <- 4326
 Need to merge all three files of points and do the same for the polygons to create a layer of points and one of polygons
 ```{r}
 
-## MPAs from MPAtlas
+## MPAs from MPAtlas ----
 
-data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") %>% 
-  st_sfc(crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") 
 
+data_mpa_30 <- data_mpa %>% 
+  st_drop_geometry() %>% 
+  filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
+                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
+                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>%
+  filter(is_mpa == 1) %>% 
+  count(sovereign) %>% 
+  arrange(sovereign)
+  #distinct(sovereign)
+
+# Extract MPAs for 6 selected countries ----
+data_mpa_top6 <- data_mpa %>% 
+  filter(sovereign %in% c("FJI", "FRA", "IDN", "BLZ", "EGY", "MDV", "CUB")) %>% 
+  filter(is_mpa == 1) %>% 
+  group_by(sovereign) %>% 
+  mutate(surf_mpa = st_area(geometry)) %>% 
+  st_drop_geometry() %>% 
+  summarise(nb_mpa = n(),
+            surface_mpa = sum(surf_mpa)) %>% 
+  ungroup()
+
+# Converts the surface in km²
+units(data_mpa_top6$surface_mpa) <- "km^2"
+
+## Extract all the MPAs that contain coral reefs for xXXX/ the top 6 ----
+# Does not take into account the protection level
+
+mpa_w_reef <- data_mpa %>% 
+  filter(sovereign %in% c("CUB")) %>% 
+  filter(is_mpa == 1) %>% 
+  #spatial join btw coral distrib and the location of the MPAs
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  st_drop_geometry() %>% 
+  #retain only one line per MPA
+  distinct(mpa_id, .keep_all = T) %>% 
+  group_by(sovereign) %>% 
+  summarise(nb_mpa_w_cr = n()) %>% 
+  ungroup() %>% 
+  arrange(sovereign) %>% 
+  left_join(data_mpa_top6, .)
+
+## Joining with the EEZ 
+# Calculate the % of the EEZ covered with MPAs
+
+data_eez_6 <- data_eez %>% 
+  filter(SOVEREIGN1 %in% c("Belize", "Egypt", "Fiji", "France", "Indonesia", "Maldives")) %>% 
+  mutate(surf_eez = st_area(geometry)) %>% 
+  #st_drop_geometry() %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(surface_eez = sum(surf_eez))
+  
+test <- data_mpa %>% 
+  filter(sovereign %in% c("FJI", "FRA", "IDN", "BLZ", "EGY", "MDV")) %>% 
+  st_join(., data_eez_6)  %>% 
+  st_drop_geometry() 
+  
+  
+  group_by(sovereign) %>% 
+  mutate(mpa_vs_eez <- surf_mpa/surf_eez * 100)
+  
+## Plot ----  
 ggplot() +
   # Adding the EEZ
   geom_sf(data = data_eez, fill = col_eez, color = col_eez_b, alpha = 0.8) +
@@ -163,7 +224,7 @@ land_atolls_trans <- land_atolls %>%
 # 2. Create all the plots ----
 
 results <- data_eez_trans %>%
-  filter(SOVEREIGN1 %in% c("Belize", "Fiji", "France", "Egypt", "Maldives", "Indonesia")) %>% 
+  filter(SOVEREIGN1 %in% c("Belize", "Fiji", "France", "Egypt", "Maldives", "Indonesia", "Cuba")) %>% 
   group_by(SOVEREIGN1) %>%
   do(plot = ggplot() +
       geom_sf(data = world_map_background, fill = "#56B4E950", color = "grey30", size = 0.5/.pt) +
@@ -174,7 +235,8 @@ results <- data_eez_trans %>%
       theme(strip.background = element_rect(fill = "transparent", color = NA),
             plot.background = element_rect(fill = "transparent", color = NA),
             panel.grid = element_blank(),
-            panel.background = element_blank()))
+            panel.background = element_blank(),
+            panel.border = element_blank()))
 
 # 3. Export all the plots ----
 
@@ -200,7 +262,7 @@ list_classic <- data_boundary %>%
   distinct(SOVEREIGN1) %>% 
   pull()
 
-list_classic <- c("Australia")
+#list_classic <- c("Maldives")
 
 # 2. Make the loop ----
 
@@ -224,17 +286,18 @@ for (i in list_classic) {
   geom_sf(data = coral_distribution,
           col = "azure3", size = rel(0.2), alpha = 0.5,
           show.legend = FALSE) +
+  #geom_sf(data = data_eez_i, color = col_eez_b, fill = NULL) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_i, shape = 21, col = "black", aes(fill = interval_class)) +
+  geom_sf(data = data_benthos_i, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
   # Scalebar
-  annotation_scale(location = "bl") +
+  #annotation_scale(location = "bl") +
   # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
+  guides(fill = guide_legend(override.aes = list(size = 4))) +
   scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank())
   
