@@ -114,19 +114,12 @@ Need to merge all three files of points and do the same for the polygons to crea
 
 data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") 
 
-data_mpa_30 <- data_mpa %>% 
-  st_drop_geometry() %>% 
+
+# Extract MPAs for the 30 countries ----
+data_mpa_top30 <- data_mpa %>% 
   filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
                           "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>%
-  filter(is_mpa == 1) %>% 
-  count(sovereign) %>% 
-  arrange(sovereign)
-  #distinct(sovereign)
-
-# Extract MPAs for 6 selected countries ----
-data_mpa_top6 <- data_mpa %>% 
-  filter(sovereign %in% c("FJI", "FRA", "IDN", "BLZ", "EGY", "MDV", "CUB")) %>% 
+                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>% 
   filter(is_mpa == 1) %>% 
   group_by(sovereign) %>% 
   mutate(surf_mpa = st_area(geometry)) %>% 
@@ -136,13 +129,13 @@ data_mpa_top6 <- data_mpa %>%
   ungroup()
 
 # Converts the surface in km²
-units(data_mpa_top6$surface_mpa) <- "km^2"
+units(data_mpa_top30$surface_mpa) <- "km^2"
 
-## Extract all the MPAs that contain coral reefs for xXXX/ the top 6 ----
+## Extract all the MPAs that contain coral reefs for the top 30 ----
 # Does not take into account the protection level
 
 mpa_w_reef <- data_mpa %>% 
-  filter(sovereign %in% c("CUB")) %>% 
+  #filter(sovereign %in% c("CUB")) %>% 
   filter(is_mpa == 1) %>% 
   #spatial join btw coral distrib and the location of the MPAs
   st_join(coral_distribution, .,  left = FALSE) %>% 
@@ -153,7 +146,7 @@ mpa_w_reef <- data_mpa %>%
   summarise(nb_mpa_w_cr = n()) %>% 
   ungroup() %>% 
   arrange(sovereign) %>% 
-  left_join(data_mpa_top6, .)
+  left_join(data_mpa_top30, .)
 
 ## Joining with the EEZ 
 # Calculate the % of the EEZ covered with MPAs
@@ -200,6 +193,8 @@ data_mpa0 <- read_sf("./../data/WDPA_WDOECM_wdpa_shp0/WDPA_WDOECM_wdpa_shp-polyg
   filter(MARINE != 0)
 
 
+
+  
 ```
 
 
@@ -309,26 +304,49 @@ for (i in list_classic) {
 
 
 # 3.2 Overlap maps
-# 3.2.1 Overlap projection
+# 3.2.1 Projection overlaps
 
 ```{r}
 
-coral_distribution_ovlp <- coral_distribution %>%  
+# 1. Load data ----
+
+# 1.2 Land major --
+
+land_major_ovlp <- readOGR("../data/01_maps/ne_10m_land/ne_10m_land.shp", "ne_10m_land") 
+
+land_major_ovlp <- fortify(land_major_ovlp)
+
+land_major_ovlp <- land_major_ovlp %>% 
+  mutate(long = long + 360) %>% 
+  bind_rows(land_major_ovlp, .)
+
+# 1.3 Land minor --
+
+land_minor_ovlp <- readOGR("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp", "ne_10m_minor_islands") 
+
+land_minor_ovlp <- fortify(land_minor_ovlp)
+
+land_minor_ovlp <- land_minor_ovlp %>% 
+  mutate(long = long + 360) %>% 
+  bind_rows(land_minor_ovlp, .)
+
+# 1.4 Land atolls --
+
+land_atolls_ovlp <- readOGR("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp", "ne_10m_reefs")
+
+land_atolls_ovlp <- fortify(land_atolls_ovlp)
+
+land_atolls_ovlp <- land_atolls_ovlp %>% 
+  mutate(long = long + 360) %>% 
+  bind_rows(land_atolls_ovlp, .)
+
+# 1.5 Coral reefs
+
+coral_distribution_ovlp <- coral_distribution %>% 
+  mutate(long = st_coordinates(.)[,"X"],
+         lat = st_coordinates(.)[,"Y"]) %>% 
+  st_drop_geometry() %>% 
   mutate(long = ifelse(long < 0, long + 360, long))
-
-data_eez_ovlp <- data_eez %>% 
-  mutate(long = ifelse(long < 0, long + 360, long))
-  
-land_major_ovlp <- land_major %>% mutate(long = st_coordinates(.)[,"X"], 
-       lat = st_coordinates(.)[,"Y"]) %>% 
-  st_drop_geometry() %>%  mutate(long = ifelse(long < 0, long + 360, long))
-
-land_minor_ovlp <- land_minor %>% mutate(long = ifelse(long < 0, long + 360, long))
-
-data_boundary_ovlp <- data_boundary %>% mutate(long = ifelse(long < 0, long + 360, long))
-
-land_atolls_ovlp <- land_atolls %>% mutate(long = ifelse(long < 0, long + 360, long))
-
 
 
 ```
@@ -351,42 +369,8 @@ data_eez_fiji <- data_eez_fiji %>%
   mutate(long = long + 360) %>% 
   bind_rows(data_eez_fiji, .)
 
-# 1.2 Land major --
 
-land_major_fiji <- readOGR("../data/01_maps/ne_10m_land/ne_10m_land.shp", "ne_10m_land") 
-
-land_major_fiji <- fortify(land_major_fiji)
-
-land_major_fiji <- land_major_fiji %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(land_major_fiji, .)
-
-# 1.3 Land minor --
-
-land_minor_fiji <- readOGR("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp", "ne_10m_minor_islands") 
-
-land_minor_fiji <- fortify(land_minor_fiji)
-
-land_minor_fiji <- land_minor_fiji %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(land_minor_fiji, .)
-
-# 1.4 Land atolls --
-
-land_atolls_fiji <- readOGR("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp", "ne_10m_reefs")
-
-land_atolls_fiji <- fortify(land_atolls_fiji)
-
-land_atolls_fiji <- land_atolls_fiji %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(land_atolls_fiji, .)
-
-# 1.5 Coral reefs
-
-coral_distribution_fiji <- coral_distribution %>% 
-  mutate(long = ifelse(long < 0, long + 360, long)) 
-
-# 1.6 Data benthos range --
+# 1.2 Data benthos range --
 
 data_benthos_range_fiji <- data_benthos_range %>% 
   filter(SOVEREIGN1 == "Fiji") %>% 
@@ -399,12 +383,12 @@ data_benthos_range_fiji <- data_benthos_range %>%
 
 ggplot() +
   geom_polygon(data = data_eez_fiji, aes(x = long, y = lat, group = group), fill = col_eez, alpha = 0.8) +
-  geom_point(data = coral_distribution_fiji, aes(x= long, y = lat), 
+  geom_point(data = coral_distribution_ovlp, aes(x= long, y = lat), 
              color = "azure3", size = rel(0.2), alpha = 0.5,
              show.legend = FALSE) +
-  geom_polygon(data = land_major_fiji, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  geom_polygon(data = land_minor_fiji, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  geom_polygon(data = land_atolls_fiji, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
+  geom_polygon(data = land_major_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
+  geom_polygon(data = land_minor_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
+  geom_polygon(data = land_atolls_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
   
   geom_point(data = data_benthos_range_fiji, aes(x = long, y = lat, col = interval_class)) +
   guides(colour = guide_legend(override.aes = list(size = 4))) +
@@ -412,6 +396,8 @@ ggplot() +
   scale_x_continuous(breaks = c(170, 175, 180, 185), labels = c("170°E","175°E", "180°", "175°W"), limits = c(170, 185)) +
   scale_y_continuous(breaks = c(-25, -20, -15, -10), labels = c("25°S", "20°S", "15°S", "10°S"), limits = c(c(-26, -9))) +
   coord_quickmap() +
+  guides(fill = guide_legend(override.aes = list(size = 4))) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank()) 
   # Scalebar
   #annotation_scale(location = "bl", plot_unit = "km") 
@@ -422,7 +408,74 @@ ggsave(filename = "../figs/01_individual-map-by-country_fiji.png")
 
 # 4. Remove useless objects ----
 
-rm(data_eez_fiji, land_major_fiji, land_minor_fiji, land_atolls_fiji, data_benthos_range_fiji)
+#rm(data_eez_fiji, land_major_fiji, land_minor_fiji, land_atolls_fiji, data_benthos_range_fiji)
+
+# Another solution
+# https://stackoverflow.com/questions/58662438/sf-ggplot-trying-to-map-fiji-islands
+
+```
+# 3.2.1 Kiribati
+
+```{r}
+
+# 1. Load data ----
+
+# 1.1 EEZ data --
+
+data_eez_kiri <- readOGR("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp", "eez_v11")
+
+data_eez_kiri <- subset(data_eez_kiri, SOVEREIGN1 == "Kiribati")
+
+data_eez_kiri <- fortify(data_eez_kiri)
+
+data_eez_kiri <- data_eez_kiri %>% 
+  mutate(long = long + 360) %>% 
+  bind_rows(data_eez_kiri, .)
+
+# 1.2 Data benthos range --
+
+data_benthos_range_kiri <- data_benthos_range %>% 
+  filter(SOVEREIGN1 == "Kiribati") %>% 
+  mutate(long = st_coordinates(.)[,"X"],
+         lat = st_coordinates(.)[,"Y"]) %>% 
+  st_drop_geometry() %>% 
+  mutate(long = ifelse(long < 0, long + 360, long))
+
+# 2. Make the plot ----
+
+ggplot() +
+  geom_polygon(data = data_eez_kiri, aes(x = long, y = lat, group = group), fill = col_eez, alpha = 0.8) +
+  geom_point(data = coral_distribution_ovlp, aes(x= long, y = lat), 
+             color = "azure3", size = rel(0.2), alpha = 0.5,
+             show.legend = FALSE) +
+  geom_polygon(data = land_major_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
+  geom_polygon(data = land_minor_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
+  geom_polygon(data = land_atolls_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
+  
+  geom_point(data = data_benthos_range_kiri, shape = 21, col = "black", size = 3, aes(x = long, y = lat, fill = interval_class)) +
+  guides(colour = guide_legend(override.aes = list(size = 4))) +
+  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_x_continuous(breaks = c(170, 180, 190, 200, 210), 
+                     labels = c("170°E","180°", "170°W", "160°W", "150°W"),
+                     limits = c(165, 215)) +
+  scale_y_continuous(breaks = c(-15, -10, - 5, 0, 5, 10), 
+                     labels = c("15°S", "10°S", "5°S", "0°", "5°N", "10°N"), 
+                     limits = c(c(-15, 10))) +
+  coord_quickmap() +
+  guides(fill = guide_legend(override.aes = list(size = 4))) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  theme(axis.title = element_blank())
+  # Scalebar
+  #annotation_scale(location = "bl", plot_unit = "km") 
+
+
+# 3. Export the map ----
+
+ggsave(filename = "../figs/01_individual-map-by-country_kiribati.png")
+
+# 4. Remove useless objects ----
+
+rm(data_eez_kiri, land_major_kiri, land_minor_kiri, land_atolls_kiri, data_benthos_range_kiri)
 
 # Another solution
 # https://stackoverflow.com/questions/58662438/sf-ggplot-trying-to-map-fiji-islands
