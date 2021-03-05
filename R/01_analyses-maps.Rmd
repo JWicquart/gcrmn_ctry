@@ -148,7 +148,7 @@ mpa_w_reef <- data_mpa %>%
   arrange(sovereign) %>% 
   left_join(data_mpa_top30, .)
 
-## Joining with the EEZ 
+## Joining with the EEZ ----
 # Calculate the % of the EEZ covered with MPAs
 
 data_eez_6 <- data_eez %>% 

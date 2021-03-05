@@ -270,7 +270,41 @@ for (i in unique(data_benthos$SOVEREIGN1)) {
 
 write_csv2(precision_taxo, "../figs/02_percentage-precision-taxo.csv")
 ```
+# Table - absolute values
 
+```{r}
+
+data_abs <- data_benthos %>% 
+  mutate(Method = str_split_fixed(Method, ",", 6)[,1],
+         Method = str_to_lower(Method),
+         Method = str_trim(Method, side = "both"),
+         Method = str_squish(Method),
+         Method = case_when(Method %in% c("line intercept transect", 
+                                          "line intersect transect",
+                                          "lit") ~ "LIT",
+                            Method %in% c("point intercept method",
+                                          "point intercept transect",
+                                          "point intersect transect",
+                                          "pit") ~ "PIT",
+                            Method %in% c("photo-quadrat",
+                                          "Photo-quadrat",
+                                          "underwater photo transect") ~ "Photo-quadrat",
+                            Method %in% c("visual census",
+                                          "visual quadrat estimation",
+                                          "vis est.") ~ "Visual census",
+                            Method %in% c("chain intercept method",
+                                          "cross intercept transect",
+                                          "perpendicular intercept transect",
+                                          "video-transect",
+                                          "other") ~ "Other methods",
+                            TRUE ~ "Unknown"))  %>% 
+  group_by(Method, SOVEREIGN1) %>% 
+  count(name = "method_site") %>% 
+  
+
+
+
+```
 
 
 
