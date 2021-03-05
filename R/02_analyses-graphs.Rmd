@@ -168,7 +168,7 @@ data_method <- data_benthos %>%
                                           "perpendicular intercept transect",
                                           "video-transect",
                                           "other") ~ "Other methods",
-                            TRUE ~ "Unknown"))  %>% 
+                            TRUE ~ "Unknown")) %>% 
   group_by(Method, SOVEREIGN1) %>% 
   count(name = "Abs") %>% 
   ungroup() %>% 
@@ -205,10 +205,75 @@ for (i in unique(data_method$SOVEREIGN1)) {
 
 }
 
+```
+
+# Methods used by time-range
+
+```{r fig.width=15}
+
+# 1. Modify the data ----
+
+data_method <- data_benthos %>% 
+  select(Latitude, Longitude, Year, Method, SOVEREIGN1) %>% 
+  distinct(.) %>% 
+  mutate(Method = str_split_fixed(Method, ",", 6)[,1],
+         Method = str_to_lower(Method),
+         Method = str_trim(Method, side = "both"),
+         Method = str_squish(Method),
+         Method = case_when(Method %in% c("line intercept transect", 
+                                          "line intersect transect",
+                                          "lit") ~ "LIT",
+                            Method %in% c("point intercept method",
+                                          "point intercept transect",
+                                          "point intersect transect",
+                                          "pit") ~ "PIT",
+                            Method %in% c("photo-quadrat",
+                                          "Photo-quadrat",
+                                          "underwater photo transect") ~ "Photo-quadrat",
+                            Method %in% c("visual census",
+                                          "visual quadrat estimation",
+                                          "vis est.") ~ "Visual census",
+                            Method %in% c("chain intercept method",
+                                          "cross intercept transect",
+                                          "perpendicular intercept transect",
+                                          "video-transect",
+                                          "other") ~ "Other methods",
+                            TRUE ~ "Unknown"),
+         Time_range = case_when(Year >= 1970 & Year < 2000 ~ "1970-1999",
+                                Year >= 2000 & Year < 2010 ~ "2000-2009",
+                                Year >= 2010 & Year < 2020 ~ "2010-2019")) %>% 
+  group_by(Method, SOVEREIGN1, Time_range) %>% 
+  count(name = "Abs") %>% 
+  drop_na(Time_range) %>% 
+  ungroup() %>% 
+  complete(Method, SOVEREIGN1, Time_range, fill = list(Abs = 0)) %>% 
+  group_by(SOVEREIGN1) %>% 
+  mutate(Rel = (Abs/sum(Abs))*100,
+         Method = as.factor(Method)) %>% 
+  ungroup() %>% 
+  arrange(SOVEREIGN1)
+
+# 2. Make the loop ----
+
+for (i in unique(data_method$SOVEREIGN1)) {
+  
+  data_method_i <- data_method %>% 
+    filter(SOVEREIGN1 == i)
+  
+  plot_i <- ggplot(data_method_i, aes(x = Time_range, y = Rel, fill = Method)) +
+    geom_bar(stat = "identity", color = "black")
+  
+  ggsave(plot_i, 
+         filename = paste0("../figs/02_graph-transects-methods-by-time-range_", tolower(as.character(i)), ".png"),
+         width = 6,
+         height = 4)
+
+}
 
 ```
 
 # Taxonomic precision
+
 ```{r}
 
 precision_taxo <- data_benthos %>% 
