@@ -148,25 +148,53 @@ mpa_w_reef <- data_mpa %>%
   arrange(sovereign) %>% 
   left_join(data_mpa_top30, .)
 
-## Joining with the EEZ ----
-# Calculate the % of the EEZ covered with MPAs
 
-data_eez_6 <- data_eez %>% 
-  filter(SOVEREIGN1 %in% c("Belize", "Egypt", "Fiji", "France", "Indonesia", "Maldives")) %>% 
-  mutate(surf_eez = st_area(geometry)) %>% 
-  #st_drop_geometry() %>% 
-  group_by(SOVEREIGN1) %>% 
-  summarise(surface_eez = sum(surf_eez))
-  
-test <- data_mpa %>% 
-  filter(sovereign %in% c("FJI", "FRA", "IDN", "BLZ", "EGY", "MDV")) %>% 
-  st_join(., data_eez_6)  %>% 
-  st_drop_geometry() 
-  
-  
+## Save table mpa
+
+write_csv2(mpa_w_reef, "../figs/02_mpa-with-reef.csv")
+
+
+
+mpa_hp_reef <- data_mpa %>% 
+  filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
+                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
+                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>% 
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  st_drop_geometry() %>% 
+  #retain only one line per MPA
+  distinct(mpa_id, .keep_all = T) %>% 
+  filter(is_mpa == 1) %>% 
+  filter(no_take %in% c("All", "Part")) %>% 
   group_by(sovereign) %>% 
-  mutate(mpa_vs_eez <- surf_mpa/surf_eez * 100)
+  summarise(nb_hp_zone = n()) %>% 
+  ungroup() %>% 
+  arrange(sovereign)
   
+### Nb of HP MPA zones encompassing coral reefs - unfinished
+
+hp_reefs <- data_mpa %>% 
+    filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
+                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
+                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>% 
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  st_drop_geometry() %>% 
+  distinct(mpa_id, .keep_all = T) %>% 
+  filter(is_mpa == 1) %>% 
+  distinct(mpa_id, no_take, .keep_all = T) %>%
+  group_by(sovereign, no_take) %>%
+  mutate(nb = n()) %>% 
+  arrange(sovereign)
+
+
+temp <- data_mpa %>% 
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  filter(sovereign %in% c("AUS")) %>% 
+  st_drop_geometry() %>% 
+  distinct(mpa_id, no_take, .keep_all=T) %>% 
+  arrange(mpa_id)
+
+
+
 ## Plot ----  
 ggplot() +
   # Adding the EEZ

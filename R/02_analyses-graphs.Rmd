@@ -94,6 +94,23 @@ data_reefs %>%
 
 ```
 
+# Number of sites
+
+```{r}
+# Number of sites per country
+
+stat_sites <- data_benthos %>% 
+  select(SOVEREIGN1, Latitude, Longitude) %>% 
+  distinct(.) %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(nb_sites = n())
+  
+
+
+
+
+```
+
 # Distribution of years
 
 ```{r}
@@ -124,7 +141,7 @@ for (i in unique(data_years$SOVEREIGN1)) {
     theme(plot.tag = element_text(size = 20))
   
   ggsave(plot_i, filename = paste0("../figs/02_graph-transects-by-year_", tolower(as.character(i)), ".png"),
-         width = 6,
+         width = 4,
          height = 4)
 }
 
@@ -211,7 +228,7 @@ for (i in unique(data_method$SOVEREIGN1)) {
 
 ```
 
-# Methods used by time-range
+# Methods used by time-range - %
 
 ```{r fig.width=15}
 
@@ -246,11 +263,11 @@ data_method <- data_benthos %>%
          Time_range = case_when(Year >= 1970 & Year < 2000 ~ "1970-1999",
                                 Year >= 2000 & Year < 2010 ~ "2000-2009",
                                 Year >= 2010 & Year < 2020 ~ "2010-2019")) %>% 
-  group_by(Method, SOVEREIGN1, Time_range) %>% 
+  group_by(SOVEREIGN1, Method, Time_range) %>% 
   count(name = "Abs") %>% 
   drop_na(Time_range) %>% 
   ungroup() %>% 
-  complete(Method, SOVEREIGN1, Time_range, fill = list(Abs = 0)) %>% 
+  complete(SOVEREIGN1, Method, Time_range, fill = list(Abs = 0)) %>% 
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
          Method = as.factor(Method)) %>% 
@@ -340,7 +357,7 @@ for (i in unique(data_benthos$SOVEREIGN1)) {
     
   ggsave(plot_i, 
          filename = paste0("../figs/02_graph-transects-precision-taxo_", tolower(as.character(i)), ".png"),
-         width = 6,
+         width = 5,
          height = 2)
 }
 
