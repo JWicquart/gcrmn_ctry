@@ -18,3 +18,4 @@ palette_trange <- c("#3fc380", "#5c97bf", "#fad859", "#eb9532", "#e74c3c")
 col_eez <- "#e4f1fe"
 col_eez_b <- "cadetblue3"
 col_eez_g <- "firebrick2"
+col_method <- c("#3fc380", "#5c97bf", "#fad859", "#eb9532", "#e74c3c", "grey80")
