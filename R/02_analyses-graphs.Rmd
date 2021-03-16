@@ -50,7 +50,6 @@ data_benthos <- data_benthos %>%
          Latitude = st_coordinates(.)[,"Y"]) %>% 
   st_drop_geometry(.) 
 
-
 ```
 
 # Table reef area by country
@@ -94,11 +93,35 @@ data_reefs %>%
 
 ```
 
+# Number of sites
+
+```{r}
+
+data_years2 <- data_benthos %>% 
+  select(Latitude, Longitude, SOVEREIGN1) %>% 
+  distinct(.) %>% 
+  group_by(SOVEREIGN1) %>% 
+  count()
+
+```
+
 # Distribution of years
 
 ```{r}
 
 # 1. Modify the data ----
+
+data_years2 <- data_benthos %>% 
+  select(Latitude, Longitude, SOVEREIGN1, Year) %>% 
+  distinct() %>% 
+  group_by(SOVEREIGN1) %>% 
+  mutate(total = n_distinct(Latitude, Longitude)) %>% 
+  group_by(SOVEREIGN1, Year, total) %>% 
+  summarise(n = n_distinct(Latitude, Longitude)) %>% 
+  ungroup() %>% 
+  mutate(freq = (n/total)*100)
+
+
 
 data_years <- data_benthos %>% 
   select(Latitude, Longitude, Year, SOVEREIGN1) %>% 
@@ -330,14 +353,11 @@ for (i in unique(data_benthos$SOVEREIGN1)) {
          height = 2)
 }
 
-
 ## Save table 
 
 write_csv2(precision_taxo, "../figs/02_percentage-precision-taxo.csv")
+
 ```
-
-
-
 
 # Reproducibility
 
