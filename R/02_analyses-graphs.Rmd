@@ -93,17 +93,23 @@ data_reefs %>%
 
 ```
 
-# Number of sites
+# Number of sites and observations
 
 ```{r}
 
-# Number of sites per country
+# 1. Number of sites per country ----
 
-test2 <- data_benthos %>% 
+nb_sites <- data_benthos %>% 
   select(SOVEREIGN1, Latitude, Longitude) %>% 
   distinct() %>% 
   group_by(SOVEREIGN1) %>% 
-  summarise(nsite = n())
+  summarise(n_sites = n())
+
+# 2. Number of observations per country ----
+
+nb_obs <- data_benthos %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(n_obs = n())
 
 ```
 
