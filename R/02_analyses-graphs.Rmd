@@ -114,7 +114,11 @@ nb_sites <- data_benthos %>%
 
 nb_obs <- data_benthos %>% 
   group_by(SOVEREIGN1) %>% 
-  summarise(n_obs = n())
+  summarise(n_obs = n()) %>% 
+  ungroup() %>% 
+  mutate(tot = sum(n_obs),
+         n_rel = (n_obs*100)/tot) %>% 
+  select(-tot)
 
 # 3. left join
 
@@ -325,6 +329,21 @@ for (i in unique(data_method$SOVEREIGN1)) {
          height = 3)
 
 }
+
+```
+
+# Table
+
+```{r}
+
+# 1. Export table of method by time-range for each country ----
+
+data_method %>% 
+  select(-Rel) %>% 
+  pivot_wider(names_from = "Method", values_from = Abs) %>% 
+  arrange(SOVEREIGN1, Time_range) %>% 
+  group_by(SOVEREIGN1) %>% 
+  do(write_csv2(., paste0("../figs/03_table-methods-used-by-time-range_", tolower(unique(.$SOVEREIGN1)), ".csv")))
 
 ```
 
