@@ -342,6 +342,8 @@ data_method %>%
   select(-Rel) %>% 
   pivot_wider(names_from = "Method", values_from = Abs) %>% 
   arrange(SOVEREIGN1, Time_range) %>% 
+  select("SOVEREIGN1", "Time_range", "LIT", "Other methods", "Photo-quadrat",
+         "PIT", "Unknown", "Visual census") %>% 
   group_by(SOVEREIGN1) %>% 
   do(write_csv2(., paste0("../figs/03_table-methods-used-by-time-range_", tolower(unique(.$SOVEREIGN1)), ".csv")))
 
