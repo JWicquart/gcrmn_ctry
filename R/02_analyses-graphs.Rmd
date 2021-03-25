@@ -50,6 +50,11 @@ data_benthos <- data_benthos %>%
          Latitude = st_coordinates(.)[,"Y"]) %>% 
   st_drop_geometry(.) 
 
+
+### 
+#temp <- data_benthos %>% 
+#  filter(SOVEREIGN1 %in% "United States") %>% 
+#  distinct(Country, Area, Archipelago, .keep_all = T)
 ```
 
 # Table reef area by country
@@ -110,6 +115,14 @@ nb_sites <- data_benthos %>%
 nb_obs <- data_benthos %>% 
   group_by(SOVEREIGN1) %>% 
   summarise(n_obs = n())
+
+# 3. left join
+
+monit_effort <- left_join(nb_sites, nb_obs) 
+
+write_csv2(monit_effort, "../figs/monitoring-effort-by-country.csv")
+
+rm(nb_sites, nb_obs)
 
 ```
 
