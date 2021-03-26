@@ -34,6 +34,7 @@ library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
+library(rfishbase) # Access to the fishbase database
 
 # 3. Set default ggplot theme ----
 
@@ -46,6 +47,8 @@ theme_set(theme_graph())
 load("./../data/00_filtered/00-data_benthos-top_30.RData")
 
 data_benthos <- data_benthos %>% 
+  mutate(Category = as.character(Category),
+                Group = as.character(Group)) %>% 
   mutate(Longitude = st_coordinates(.)[,"X"],
          Latitude = st_coordinates(.)[,"Y"]) %>% 
   st_drop_geometry(.) 
@@ -98,9 +101,33 @@ data_reefs %>%
 
 ```
 
-# Number of sites and observations
+<<<<<<< HEAD
+# RFishBase data
 
 ```{r}
+
+
+
+```
+
+# Number of sites
+
+```{r}
+# Number of sites per country
+
+stat_sites <- data_benthos %>% 
+  select(SOVEREIGN1, Latitude, Longitude) %>% 
+  distinct(.) %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(nb_sites = n())
+  
+
+
+
+
+# Number of sites and observations
+
+
 
 # 1. Number of sites per country ----
 
@@ -121,6 +148,7 @@ nb_obs <- data_benthos %>%
   select(-tot) %>% 
   arrange(SOVEREIGN1)
 
+
 # 3. left join
 
 monit_effort <- left_join(nb_sites, nb_obs) 
@@ -128,6 +156,7 @@ monit_effort <- left_join(nb_sites, nb_obs)
 write_csv2(monit_effort, "../figs/monitoring-effort-by-country.csv")
 
 rm(nb_sites, nb_obs)
+
 
 ```
 
