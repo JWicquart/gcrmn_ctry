@@ -1,0 +1,107 @@
+---
+title: "Analyses - Hard coral species by country"
+author : "Nina Prasil & Jeremy Wicquart"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: "cosmo"
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+
+```
+
+# Import functions, packages and data
+
+```{r base}
+
+# 1. Source functions ----
+
+source("functions/graphical_par.R")
+
+# 2. Required packages ----
+
+library(tidyverse) # Core tidyverse packages
+library(readxl) # To read excel files
+library(sf)
+library(sp)
+library(rgdal)
+library(formattable) # For interactive html tables
+library(DT) # For interactive html tables
+
+# 3. Define the CRS ----
+
+crs_used <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
+
+# 4. Load data ----
+
+# 4.1 IUCN data --
+
+data_corals <- readRDS("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/map/iucn_data.rds")
+
+# 4.2 EEZ data --
+
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
+
+```
+
+# Number of HC species by country
+
+```{r eval=FALSE, include=TRUE}
+
+# 1. Join EEZ and coral species distribution (45 min to run) ----
+
+data_corals_country <- st_join(data_eez, data_corals) %>% 
+  st_drop_geometry() %>% 
+  select(SOVEREIGN1, TERRITORY1, species) %>% 
+  drop_na(species)
+
+# 2. Save the data for further analyses ----
+
+write.csv(data_corals_country, "../data/list-coral-species-by-country.csv", row.names = FALSE)
+
+```
+
+```{r}
+
+# 1. Load the list of top 30 country with highest reef area ----
+
+list_country <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1) %>% 
+  pull(SOVEREIGN1)
+
+# 2. Get number of hard corals species by country ----
+
+data_corals_country <- read.csv("../data/list-coral-species-by-country.csv") %>% 
+  filter(SOVEREIGN1 %in% list_country) %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(n = n_distinct(species)) %>% 
+  arrange(-n)
+
+# 3. Print the results ----
+
+data_corals_country %>% 
+  formattable(.) %>% 
+  as.datatable(., rownames = FALSE, colnames = c("Country", "Number of hard coral species"))
+
+```
+
+# Reproducibility
+
+```{r reprod}
+
+# 1. Reproducibility ----
+
+sessionInfo()
+
+```
+
+---
+Nina PRASIL & Jeremy WICQUART | `r format(Sys.time())`

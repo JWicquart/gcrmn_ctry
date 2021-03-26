@@ -119,7 +119,7 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
 data_mpa_top30 <- data_mpa %>% 
   filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
                           "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>% 
+                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
   filter(is_mpa == 1) %>% 
   group_by(sovereign) %>% 
   mutate(surf_mpa = st_area(geometry)) %>% 
@@ -158,7 +158,7 @@ write_csv2(mpa_w_reef, "../figs/02_mpa-with-reef.csv")
 mpa_hp_reef <- data_mpa %>% 
   filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
                           "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>% 
+                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
   st_join(coral_distribution, .,  left = FALSE) %>% 
   st_drop_geometry() %>% 
   #retain only one line per MPA
@@ -175,7 +175,7 @@ mpa_hp_reef <- data_mpa %>%
 hp_reefs <- data_mpa %>% 
     filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
                           "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MUS", "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON")) %>% 
+                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
   st_join(coral_distribution, .,  left = FALSE) %>% 
   st_drop_geometry() %>% 
   distinct(mpa_id, .keep_all = T) %>% 
@@ -244,10 +244,16 @@ land_minor_trans <- land_minor %>%
 land_atolls_trans <- land_atolls %>% 
   st_transform(., crs = crs_global)
 
-# 2. Create all the plots ----
+# 2. Select the 3 countries ----
+
+top_30 <- data_boundary %>% 
+  select(SOVEREIGN1) %>% 
+  distinct(.) 
+
+# 3. Create all the plots ----
 
 results <- data_eez_trans %>%
-  filter(SOVEREIGN1 %in% c("Belize", "Fiji", "France", "Egypt", "Maldives", "Indonesia", "Cuba")) %>% 
+  filter(SOVEREIGN1 %in% top_30$SOVEREIGN1) %>% 
   group_by(SOVEREIGN1) %>%
   do(plot = ggplot() +
       geom_sf(data = world_map_background, fill = "#56B4E950", color = "grey30", size = 0.5/.pt) +
@@ -285,7 +291,7 @@ list_classic <- data_boundary %>%
   distinct(SOVEREIGN1) %>% 
   pull()
 
-#list_classic <- c("Maldives")
+list_classic <- c("Mexico")
 
 # 2. Make the loop ----
 
