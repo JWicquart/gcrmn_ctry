@@ -47,6 +47,8 @@ theme_set(theme_graph())
 load("./../data/00_filtered/00-data_benthos-top_30.RData")
 
 data_benthos <- data_benthos %>% 
+  mutate(Category = as.character(Category),
+                Group = as.character(Group)) %>% 
   mutate(Longitude = st_coordinates(.)[,"X"],
          Latitude = st_coordinates(.)[,"Y"]) %>% 
   st_drop_geometry(.) 
