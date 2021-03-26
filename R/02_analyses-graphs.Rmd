@@ -350,7 +350,7 @@ data_method %>%
 
 ```
 
-# Taxonomic precision
+# Taxonomic precision general
 
 ```{r}
 
@@ -413,6 +413,105 @@ for (i in unique(data_benthos$SOVEREIGN1)) {
 ## Save table 
 
 write_csv2(precision_taxo, "../figs/02_percentage-precision-taxo.csv")
+
+```
+
+# Taxonomic precision algae
+
+```{r}
+
+# 1. Modify the data ----
+
+taxo_algae <- data_benthos %>% 
+  filter(Category == "Algae") %>% 
+  mutate(Group = ifelse(is.na(Group), "Unknown", Group)) %>% 
+  group_by(SOVEREIGN1, Group) %>% 
+  count(name = "n_row") %>% 
+  ungroup() %>% 
+  group_by(SOVEREIGN1) %>% 
+  mutate(total = sum(n_row)) %>% 
+  ungroup() %>% 
+  mutate(row_rel = (n_row*100)/total)
+
+# 2. Make the plot ----
+
+for (i in unique(taxo_algae$SOVEREIGN1)) {
+
+  precision_taxo_i <- taxo_algae %>% 
+    filter(SOVEREIGN1 == i)
+  
+  plot_i <- ggplot(data = precision_taxo_i, aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
+  geom_bar(stat = "identity") +
+  coord_flip() + 
+  scale_fill_manual(breaks = c("Coralline algae", "Macroalgae", "Turf algae", "Unknown"),
+                    values = c("#e08283", "#00b16a", "#23cba7", "#6c7a89")) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_rect(colour = "white"),
+        axis.line.x = element_line(colour = "black"),
+        legend.position = "top") +
+  scale_y_continuous(limits = c(0, 100), 
+                     expand = c(0,0), 
+                     labels = function(x) paste0(x, " %")) +
+  labs(y = "Percentage of rows")
+    
+  ggsave(plot_i, 
+         filename = paste0("../figs/02_graph-rows-precision-algae_", tolower(as.character(i)), ".png"),
+         width = 6,
+         height = 2)
+}
+
+```
+
+# Taxonomic precision other fauna
+
+```{r}
+
+# 1. Modify the data ----
+
+taxo_othfau <- data_benthos %>% 
+  filter(Category == "Other fauna") %>% 
+  mutate(Group = ifelse(Group %in% c("Porifera", "Tunicata", "Alcyonacea") | is.na(Group), Group, "Other groups"),
+         Group = ifelse(is.na(Group), "Unknown", Group)) %>% 
+  group_by(SOVEREIGN1, Group) %>% 
+  count(name = "n_row") %>% 
+  ungroup() %>% 
+  group_by(SOVEREIGN1) %>% 
+  mutate(total = sum(n_row)) %>% 
+  ungroup() %>% 
+  mutate(row_rel = (n_row*100)/total)
+
+# 2. Make the plot ----
+
+for (i in unique(taxo_othfau$SOVEREIGN1)) {
+
+  precision_taxo_i <- taxo_othfau %>% 
+    filter(SOVEREIGN1 == i)
+  
+  plot_i <- ggplot(data = precision_taxo_i, aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
+  geom_bar(stat = "identity") +
+  coord_flip() + 
+  scale_fill_manual(breaks = c("Alcyonacea", "Other groups", "Porifera", "Tunicata", "Unknown"),
+                    values = c("#e47833", "#f4b350", "#947cb0", "#fff9de", "#6c7a89")) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_rect(colour = "white"),
+        axis.line.x = element_line(colour = "black"),
+        legend.position = "top") +
+  scale_y_continuous(limits = c(0, 100), 
+                     expand = c(0,0), 
+                     labels = function(x) paste0(x, " %")) +
+  labs(y = "Percentage of rows")
+
+  ggsave(plot_i, 
+         filename = paste0("../figs/02_graph-rows-precision-other-fauna_", tolower(as.character(i)), ".png"),
+         width = 6,
+         height = 2)
+}
 
 ```
 
