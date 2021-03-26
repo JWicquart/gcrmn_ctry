@@ -34,6 +34,7 @@ library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
+library(rfishbase) # Access to the fishbase database
 
 # 3. Set default ggplot theme ----
 
@@ -94,6 +95,31 @@ data_reefs %>%
 
 ```
 
+# RFishBase data
+
+```{r}
+
+
+
+```
+
+# Number of sites
+
+```{r}
+# Number of sites per country
+
+stat_sites <- data_benthos %>% 
+  select(SOVEREIGN1, Latitude, Longitude) %>% 
+  distinct(.) %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(nb_sites = n())
+  
+
+
+
+
+```
+
 # Distribution of years
 
 ```{r}
@@ -119,10 +145,13 @@ for (i in unique(data_years$SOVEREIGN1)) {
   plot_i <- ggplot(data_years_i, aes(x = Year, y = freq)) +
     geom_histogram(stat = "identity", color = col_color_graph, fill = col_fill_graph) +
     lims(x = c(1970, 2020)) +
-    labs(x = "Year", y = "Percentage of sites") 
+    labs(x = "Year", y = "Percentage of sites") +
+    labs(tag = "A") +
+    theme(plot.tag = element_text(size = 20))
   
-  ggsave(plot_i, filename = paste0("../figs/02_graph-transects-by-year_", tolower(as.character(i)), ".png"))
-
+  ggsave(plot_i, filename = paste0("../figs/02_graph-transects-by-year_", tolower(as.character(i)), ".png"),
+         width = 4,
+         height = 4)
 }
 
 # 3. Verification
@@ -167,7 +196,7 @@ data_method <- data_benthos %>%
                                           "perpendicular intercept transect",
                                           "video-transect",
                                           "other") ~ "Other methods",
-                            TRUE ~ "Unknown"))  %>% 
+                            TRUE ~ "Unknown")) %>% 
   group_by(Method, SOVEREIGN1) %>% 
   count(name = "Abs") %>% 
   ungroup() %>% 
@@ -190,22 +219,165 @@ for (i in unique(data_method$SOVEREIGN1)) {
     geom_text(hjust = -0.2) +
     coord_flip() +
     theme(axis.text = element_text(size = 12),
-          axis.title = element_text(size = 16)) +
+          axis.title = element_text(size = 16),
+          plot.tag = element_text(size = 20)) +
     scale_x_discrete(name = NULL, 
                      limits = c("Unknown", "Other methods", "Visual census", "LIT", "PIT",  "Photo-quadrat")) +
     scale_y_continuous(name = "Percentage of sites", 
                        breaks = c(0, 25, 50, 75, 100), 
-                       limits = c(0,110))
+                       limits = c(0,110)) +
+    labs(tag = "B")
   
   ggsave(plot_i, 
          filename = paste0("../figs/02_graph-transects-methods_", tolower(as.character(i)), ".png"),
-         width = 7,
+         width = 6,
          height = 4)
 
 }
 
+```
+
+# Methods used by time-range - %
+
+```{r fig.width=15}
+
+# 1. Modify the data ----
+
+data_method <- data_benthos %>% 
+  select(Latitude, Longitude, Year, Method, SOVEREIGN1) %>% 
+  distinct(.) %>% 
+  mutate(Method = str_split_fixed(Method, ",", 6)[,1],
+         Method = str_to_lower(Method),
+         Method = str_trim(Method, side = "both"),
+         Method = str_squish(Method),
+         Method = case_when(Method %in% c("line intercept transect", 
+                                          "line intersect transect",
+                                          "lit") ~ "LIT",
+                            Method %in% c("point intercept method",
+                                          "point intercept transect",
+                                          "point intersect transect",
+                                          "pit") ~ "PIT",
+                            Method %in% c("photo-quadrat",
+                                          "Photo-quadrat",
+                                          "underwater photo transect") ~ "Photo-quadrat",
+                            Method %in% c("visual census",
+                                          "visual quadrat estimation",
+                                          "vis est.") ~ "Visual census",
+                            Method %in% c("chain intercept method",
+                                          "cross intercept transect",
+                                          "perpendicular intercept transect",
+                                          "video-transect",
+                                          "other") ~ "Other methods",
+                            TRUE ~ "Unknown"),
+         Time_range = case_when(Year >= 1970 & Year < 2000 ~ "1970-1999",
+                                Year >= 2000 & Year < 2010 ~ "2000-2009",
+                                Year >= 2010 & Year < 2020 ~ "2010-2019")) %>% 
+  group_by(SOVEREIGN1, Method, Time_range) %>% 
+  count(name = "Abs") %>% 
+  drop_na(Time_range) %>% 
+  ungroup() %>% 
+  complete(SOVEREIGN1, Method, Time_range, fill = list(Abs = 0)) %>% 
+  group_by(SOVEREIGN1) %>% 
+  mutate(Rel = (Abs/sum(Abs))*100,
+         Method = as.factor(Method)) %>% 
+  ungroup() %>% 
+  arrange(SOVEREIGN1)
+
+# 2. Make the loop ----
+
+for (i in unique(data_method$SOVEREIGN1)) {
+  
+  data_method_i <- data_method %>% 
+    filter(SOVEREIGN1 == i)
+  
+  plot_i <- ggplot(data_method_i, aes(x = Time_range, y = Rel, fill = Method)) +
+    geom_bar(stat = "identity", color = "black") +
+    scale_fill_manual(values = col_method,
+                      limits= c("Photo-quadrat", "PIT", "LIT", "Visual census", "Other methods", "Unknown")) +
+    ylab("Percentage of sites") +
+    labs(tag = "C") +
+    theme(axis.title.x = element_blank(),
+          plot.tag = element_text(size = 20))
+          
+    
+  
+  ggsave(plot_i, 
+         filename = paste0("../figs/02_graph-transects-methods-by-time-range_", tolower(as.character(i)), ".png"),
+         width = 6,
+         height = 3)
+
+}
 
 ```
+
+# Taxonomic precision
+
+```{r}
+
+precision_taxo <- data_benthos %>% 
+   select(SOVEREIGN1, Category, Group, Family, Genus, Species) %>% 
+   mutate(Tax_lvl = case_when(!(is.na(Species)) ~ "Species",
+                             !(is.na(Genus)) ~ "Genus",
+                             !(is.na(Family)) ~ "Family",
+                             !(is.na(Group)) ~ "Group",
+                             !(is.na(Category)) ~ "Category")) %>%  
+   select(-Category, -Group, -Family, -Genus, -Species) %>% 
+   group_by(SOVEREIGN1, Tax_lvl) %>%
+   summarise(Absolute = n()) %>% 
+   ungroup(.) %>%
+   group_by(SOVEREIGN1) %>% 
+   mutate(Total = sum(Absolute),
+         Percentage = (100*Absolute)/Total,
+         Tax_lvl = as.factor(as.character(Tax_lvl)))
+
+for (i in unique(data_benthos$SOVEREIGN1)) {
+
+  precision_taxo_i <- precision_taxo %>% 
+    filter(SOVEREIGN1 == i)
+  
+  plot_i <- ggplot() + # Plot
+      geom_bar(data = precision_taxo_i, 
+               aes(x = fct_rev(SOVEREIGN1), 
+                   y = Percentage,
+                   fill = fct_relevel(Tax_lvl, "Species", "Genus", "Family", "Group", "Category")),
+               stat = "identity") +
+      coord_flip() +
+      scale_fill_manual(name = "Taxonomic level",
+                      breaks = c("Category", "Group", "Family", "Genus", "Species"), 
+                      values = c("#3fc380", "#5c97bf", "#fad859", "#eb9532", "#e74c3c"),
+                      guide = guide_legend(title.position = "top"),
+                      drop = FALSE) +
+      scale_y_continuous(#name = element_blank(),
+                         breaks = c(0, 25, 50, 75, 100),
+                         labels= c("0 %", "25 %", "50 %", "75 %", "100 %"),
+                         limits = c(0,100)) +
+      labs(x = NULL,
+           tag = "D") + 
+      theme(plot.tag = element_text(size = 20),
+          legend.position = "top",
+          axis.title = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line.x.bottom =  element_line(colour = "black"))
+    
+  ggsave(plot_i, 
+         filename = paste0("../figs/02_graph-transects-precision-taxo_", tolower(as.character(i)), ".png"),
+         width = 5,
+         height = 2)
+}
+
+
+## Save table 
+
+write_csv2(precision_taxo, "../figs/02_percentage-precision-taxo.csv")
+```
+
+
+
 
 # Reproducibility
 
