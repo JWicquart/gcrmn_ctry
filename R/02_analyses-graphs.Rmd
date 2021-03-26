@@ -113,7 +113,8 @@ nb_obs <- data_benthos %>%
   ungroup() %>% 
   mutate(tot = sum(n_obs),
          n_rel = (n_obs*100)/tot) %>% 
-  select(-tot)
+  select(-tot) %>% 
+  arrange(SOVEREIGN1)
 
 ```
 
