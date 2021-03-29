@@ -445,6 +445,56 @@ write_csv2(precision_taxo, "../figs/02_percentage-precision-taxo.csv")
 
 ```
 
+# Taxonomic precision hard corals
+
+```{r}
+
+# 1. Modify the data ----
+
+taxo_coral <- data_benthos %>% 
+  filter(Category == "Hard living coral") %>% 
+  mutate(Group = ifelse(is.na(Group), "No", "Yes")) %>% 
+  group_by(SOVEREIGN1, Group) %>% 
+  count(name = "n_row") %>% 
+  ungroup() %>% 
+  group_by(SOVEREIGN1) %>% 
+  mutate(total = sum(n_row)) %>% 
+  ungroup() %>% 
+  mutate(row_rel = (n_row*100)/total)
+
+# 2. Make the plot ----
+
+for (i in unique(taxo_coral$SOVEREIGN1)) {
+
+  precision_taxo_i <- taxo_coral %>% 
+    filter(SOVEREIGN1 == i)
+  
+  plot_i <- ggplot(data = precision_taxo_i, aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
+  geom_bar(stat = "identity") +
+  coord_flip() + 
+  scale_fill_manual(breaks = c("Yes", "No"),
+                    values = c("#03a678", "#d64541"),
+                    name = "Shape") +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_rect(colour = "white"),
+        axis.line.x = element_line(colour = "black"),
+        legend.position = "top") +
+  scale_y_continuous(limits = c(0, 100), 
+                     expand = c(0,0), 
+                     labels = function(x) paste0(x, " %")) +
+  labs(y = "Percentage of rows")
+    
+  ggsave(plot_i, 
+         filename = paste0("../figs/02_graph-rows-precision-coral_", tolower(as.character(i)), ".png"),
+         width = 6,
+         height = 2)
+}
+
+```
+
 # Taxonomic precision algae
 
 ```{r}
