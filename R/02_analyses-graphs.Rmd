@@ -34,7 +34,7 @@ library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
-library(rfishbase) # Access to the fishbase database
+#library(rfishbase) # Access to the fishbase database
 
 # 3. Set default ggplot theme ----
 
@@ -474,7 +474,8 @@ for (i in unique(taxo_algae$SOVEREIGN1)) {
   geom_bar(stat = "identity") +
   coord_flip() + 
   scale_fill_manual(breaks = c("Coralline algae", "Macroalgae", "Turf algae", "Unknown"),
-                    values = c("#e08283", "#00b16a", "#23cba7", "#6c7a89")) +
+                    values = c("#e08283", "#00b16a", "#23cba7", "#6c7a89"),
+                    drop = FALSE) +
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         axis.title.y = element_blank(),
@@ -525,7 +526,8 @@ for (i in unique(taxo_othfau$SOVEREIGN1)) {
   geom_bar(stat = "identity") +
   coord_flip() + 
   scale_fill_manual(breaks = c("Alcyonacea", "Other groups", "Porifera", "Tunicata", "Unknown"),
-                    values = c("#e47833", "#f4b350", "#947cb0", "#fff9de", "#6c7a89")) +
+                    values = c("#e47833", "#f4b350", "#947cb0", "#fff9de", "#6c7a89"),
+                    drop = FALSE) +
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         axis.title.y = element_blank(),
