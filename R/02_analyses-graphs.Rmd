@@ -418,7 +418,8 @@ taxo_algae <- data_benthos %>%
   group_by(SOVEREIGN1) %>% 
   mutate(total = sum(n_row)) %>% 
   ungroup() %>% 
-  mutate(row_rel = (n_row*100)/total)
+  mutate(row_rel = (n_row*100)/total,
+         Group = factor(Group, levels = c("Unknown", "Turf algae", "Macroalgae", "Coralline algae")))
 
 # 2. Make the plot ----
 
@@ -468,7 +469,8 @@ taxo_othfau <- data_benthos %>%
   group_by(SOVEREIGN1) %>% 
   mutate(total = sum(n_row)) %>% 
   ungroup() %>% 
-  mutate(row_rel = (n_row*100)/total)
+  mutate(row_rel = (n_row*100)/total,
+         Group = factor(Group, levels = c("Unknown", "Tunicata", "Porifera", "Other groups", "Alcyonacea")))
 
 # 2. Make the plot ----
 
