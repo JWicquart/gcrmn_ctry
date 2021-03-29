@@ -45,7 +45,7 @@ crs_used <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 
 # 4.1 IUCN data --
 
-data_corals <- readRDS("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/map/iucn_data.rds")
+#data_corals <- readRDS("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/map/iucn_data.rds")
 
 # 4.2 EEZ data --
 
@@ -83,13 +83,18 @@ data_corals_country <- read.csv("../data/list-coral-species-by-country.csv") %>%
   filter(SOVEREIGN1 %in% list_country) %>% 
   group_by(SOVEREIGN1) %>% 
   summarise(n = n_distinct(species)) %>% 
-  arrange(-n)
+  #arrange(-n)
+  arrange(SOVEREIGN1)
 
 # 3. Print the results ----
 
 data_corals_country %>% 
   formattable(.) %>% 
   as.datatable(., rownames = FALSE, colnames = c("Country", "Number of hard coral species"))
+
+# 4. Export fule
+
+write_csv2(data_corals_country, "../figs/nb-coral-species-by-country.csv")
 
 ```
 
