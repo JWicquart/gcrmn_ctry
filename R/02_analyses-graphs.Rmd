@@ -474,7 +474,8 @@ for (i in unique(taxo_coral$SOVEREIGN1)) {
   coord_flip() + 
   scale_fill_manual(breaks = c("Yes", "No"),
                     values = c("#03a678", "#d64541"),
-                    name = "Shape") +
+                    name = "Shape",
+                    drop = FALSE) +
   theme(axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         axis.title.y = element_blank(),
