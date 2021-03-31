@@ -537,7 +537,8 @@ for (i in unique(taxo_algae$SOVEREIGN1)) {
   scale_y_continuous(limits = c(0, 100), 
                      expand = c(0,0), 
                      labels = function(x) paste0(x, " %")) +
-  labs(y = "Percentage of rows")
+  labs(y = "Percentage of rows",
+       tag = "E")
     
   ggsave(plot_i, 
          filename = paste0("../figs/02_graph-rows-precision-algae_", tolower(as.character(i)), ".png"),
@@ -589,7 +590,8 @@ for (i in unique(taxo_othfau$SOVEREIGN1)) {
   scale_y_continuous(limits = c(0, 100), 
                      expand = c(0,0), 
                      labels = function(x) paste0(x, " %")) +
-  labs(y = "Percentage of rows")
+  labs(y = "Percentage of rows",
+       tag = "F")
 
   ggsave(plot_i, 
          filename = paste0("../figs/02_graph-rows-precision-other-fauna_", tolower(as.character(i)), ".png"),
