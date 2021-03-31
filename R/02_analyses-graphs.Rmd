@@ -343,7 +343,8 @@ for (i in unique(data_method$SOVEREIGN1)) {
     filter(SOVEREIGN1 == i)
   
   plot_i <- ggplot(data_method_i, aes(x = Time_range, y = Rel, fill = Method)) +
-    geom_bar(stat = "identity", color = "black") +
+    #geom_bar(stat = "identity", color = "black") +
+    geom_bar(stat = "identity") +
     scale_fill_manual(values = col_method,
                       limits= c("Photo-quadrat", "PIT", "LIT", "Visual census", "Other methods", "Unknown")) +
     ylab("Percentage of sites") +
