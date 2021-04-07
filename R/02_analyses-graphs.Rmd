@@ -101,7 +101,6 @@ data_reefs %>%
 
 ```
 
-<<<<<<< HEAD
 # RFishBase data
 
 ```{r}
@@ -113,21 +112,6 @@ data_reefs %>%
 # Number of sites
 
 ```{r}
-# Number of sites per country
-
-stat_sites <- data_benthos %>% 
-  select(SOVEREIGN1, Latitude, Longitude) %>% 
-  distinct(.) %>% 
-  group_by(SOVEREIGN1) %>% 
-  summarise(nb_sites = n())
-  
-
-
-
-
-# Number of sites and observations
-
-
 
 # 1. Number of sites per country ----
 
@@ -148,15 +132,13 @@ nb_obs <- data_benthos %>%
   select(-tot) %>% 
   arrange(SOVEREIGN1)
 
-
-# 3. left join
+# 3. left join ----
 
 monit_effort <- left_join(nb_sites, nb_obs) 
 
 write_csv2(monit_effort, "../figs/monitoring-effort-by-country.csv")
 
 rm(nb_sites, nb_obs)
-
 
 ```
 
@@ -165,18 +147,6 @@ rm(nb_sites, nb_obs)
 ```{r}
 
 # 1. Modify the data ----
-
-data_years2 <- data_benthos %>% 
-  select(Latitude, Longitude, SOVEREIGN1, Year) %>% 
-  distinct() %>% 
-  group_by(SOVEREIGN1) %>% 
-  mutate(total = n_distinct(Latitude, Longitude)) %>% 
-  group_by(SOVEREIGN1, Year, total) %>% 
-  summarise(n = n_distinct(Latitude, Longitude)) %>% 
-  ungroup() %>% 
-  mutate(freq = (n/total)*100)
-
-
 
 data_years <- data_benthos %>% 
   select(Latitude, Longitude, Year, SOVEREIGN1) %>% 
