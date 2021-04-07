@@ -1,0 +1,41 @@
+---
+title: "Analyses - Fish species by country"
+author : "Nina Prasil & Jeremy Wicquart"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: "cosmo"
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+
+```
+
+# Import functions, packages and data
+
+```{r base}
+
+
+
+```
+
+# Reproducibility
+
+```{r reprod}
+
+# 1. Reproducibility ----
+
+sessionInfo()
+
+```
+
+---
+Nina PRASIL & Jeremy WICQUART | `r format(Sys.time())`
