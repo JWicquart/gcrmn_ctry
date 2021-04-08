@@ -4,7 +4,7 @@ require(extrafont) # For fonts
 
 # 2. Set the default font family ----
 
-font_choose_graph <- "Georgia"
+font_choose_graph <- "ArialMT"
 
 # 3. Set the colors ----
 

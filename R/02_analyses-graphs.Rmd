@@ -34,30 +34,23 @@ library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
-#library(rfishbase) # Access to the fishbase database
+library(ggpubr) # To assemble plots
 
 # 3. Set default ggplot theme ----
 
 theme_set(theme_graph())
 
-# 4. Import data ----
-
-# 4.2 Data benthos top 30 (raw) --
+# 4. Import and modify data ----
 
 load("./../data/00_filtered/00-data_benthos-top_30.RData")
 
 data_benthos <- data_benthos %>% 
   mutate(Category = as.character(Category),
-                Group = as.character(Group)) %>% 
+         Group = as.character(Group)) %>% 
   mutate(Longitude = st_coordinates(.)[,"X"],
          Latitude = st_coordinates(.)[,"Y"]) %>% 
   st_drop_geometry(.) 
 
-
-### 
-#temp <- data_benthos %>% 
-#  filter(SOVEREIGN1 %in% "United States") %>% 
-#  distinct(Country, Area, Archipelago, .keep_all = T)
 ```
 
 # Table reef area by country
@@ -101,33 +94,9 @@ data_reefs %>%
 
 ```
 
-<<<<<<< HEAD
-# RFishBase data
-
-```{r}
-
-
-
-```
-
 # Number of sites
 
 ```{r}
-# Number of sites per country
-
-stat_sites <- data_benthos %>% 
-  select(SOVEREIGN1, Latitude, Longitude) %>% 
-  distinct(.) %>% 
-  group_by(SOVEREIGN1) %>% 
-  summarise(nb_sites = n())
-  
-
-
-
-
-# Number of sites and observations
-
-
 
 # 1. Number of sites per country ----
 
@@ -148,15 +117,10 @@ nb_obs <- data_benthos %>%
   select(-tot) %>% 
   arrange(SOVEREIGN1)
 
+# 3. left join ----
 
-# 3. left join
-
-monit_effort <- left_join(nb_sites, nb_obs) 
-
-write_csv2(monit_effort, "../figs/monitoring-effort-by-country.csv")
-
-rm(nb_sites, nb_obs)
-
+left_join(nb_sites, nb_obs) %>% 
+  write_csv2(., "../figs/03_table-monitoring-effort-by-country.csv")
 
 ```
 
@@ -165,18 +129,6 @@ rm(nb_sites, nb_obs)
 ```{r}
 
 # 1. Modify the data ----
-
-data_years2 <- data_benthos %>% 
-  select(Latitude, Longitude, SOVEREIGN1, Year) %>% 
-  distinct() %>% 
-  group_by(SOVEREIGN1) %>% 
-  mutate(total = n_distinct(Latitude, Longitude)) %>% 
-  group_by(SOVEREIGN1, Year, total) %>% 
-  summarise(n = n_distinct(Latitude, Longitude)) %>% 
-  ungroup() %>% 
-  mutate(freq = (n/total)*100)
-
-
 
 data_years <- data_benthos %>% 
   select(Latitude, Longitude, Year, SOVEREIGN1) %>% 
@@ -187,37 +139,31 @@ data_years <- data_benthos %>%
   mutate(Total = sum(n),
          freq = (n/sum(n))*100)
 
-# 2. Make the loop ----
+# 2. Make the loop to produce each plot ----
+
+# 2.1 Create the empty list --
+
+plot_years <- list() # Empty list
+
+# 2.2 Loop --
 
 for (i in unique(data_years$SOVEREIGN1)) {
   
-  data_years_i <- data_years %>% 
-    filter(SOVEREIGN1 == i)
+  plot_i <- data_years %>% 
+    filter(SOVEREIGN1 == i) %>% 
+    ggplot(., aes(x = Year, y = freq)) +
+      geom_histogram(stat = "identity", fill = "#6c7a89") +
+      lims(x = c(1970, 2020)) +
+      labs(x = "Year", y = "Percentage of sites") +
+      theme(plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm"))
   
-  plot_i <- ggplot(data_years_i, aes(x = Year, y = freq)) +
-    geom_histogram(stat = "identity", color = col_color_graph, fill = col_fill_graph) +
-    lims(x = c(1970, 2020)) +
-    labs(x = "Year", y = "Percentage of sites") +
-    labs(tag = "A") +
-    theme(plot.tag = element_text(size = 20))
+  plot_years[[i]] <- plot_i # add each plot into plot list
   
-  ggsave(plot_i, filename = paste0("../figs/02_graph-transects-by-year_", tolower(as.character(i)), ".png"),
-         width = 4,
-         height = 4)
 }
-
-# 3. Verification
-
-temp <- data_years %>% 
-  filter(SOVEREIGN1 == "Maldives")
-
-verif <- data_benthos %>% 
-  filter(SOVEREIGN1 == "Maldives", Year == "2015") %>% 
-  distinct(.)
 
 ```
 
-# Methods used
+# Methods used general
 
 ```{r}
 
@@ -255,43 +201,48 @@ data_method <- data_benthos %>%
   complete(Method, SOVEREIGN1, fill = list(Abs = 0)) %>% 
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
-        Method = as.factor(Method)) %>% 
+        Method = as.factor(Method),
+        Method = factor(Method, levels = rev(c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown")))) %>% 
   ungroup() %>% 
   arrange(SOVEREIGN1)
 
-# 2. Make the loop ----
+# 2. Make the loop to produce each plot ----
+
+# 2.1 Create the empty list --
+
+plot_method_general <- list() # Empty list
+
+# 2.2 Loop --
 
 for (i in unique(data_method$SOVEREIGN1)) {
   
-  data_method_i <- data_method %>% 
-    filter(SOVEREIGN1 == i)
-  
-  plot_i <- ggplot(data_method_i, aes(x = Method, y = Rel, label = paste0(round(Rel, 0), " %"))) +
-    geom_bar(stat = "identity", col = "black", fill = col_fill_graph) +
+  plot_i <- data_method %>% 
+    filter(SOVEREIGN1 == i) %>% 
+    ggplot(data = ., aes(x = Method, y = Rel, label = paste0(round(Rel, 0), " %"), fill = Method)) +
+    geom_bar(stat = "identity", show.legend = FALSE) +
     geom_text(hjust = -0.2) +
     coord_flip() +
     theme(axis.text = element_text(size = 12),
           axis.title = element_text(size = 16),
-          plot.tag = element_text(size = 20)) +
-    scale_x_discrete(name = NULL, 
-                     limits = c("Unknown", "Other methods", "Visual census", "LIT", "PIT",  "Photo-quadrat")) +
+          plot.tag = element_text(size = 20),
+          plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) +
+    scale_fill_manual(breaks = c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown"),
+                      values = c("#16a085", "#00b16a", "#00b5cc", "#3498db", "#19b5fe", "#6c7a89"),
+                      drop = FALSE) +
     scale_y_continuous(name = "Percentage of sites", 
                        breaks = c(0, 25, 50, 75, 100), 
                        limits = c(0,110)) +
-    labs(tag = "B")
+    labs(x = NULL)
   
-  ggsave(plot_i, 
-         filename = paste0("../figs/02_graph-transects-methods_", tolower(as.character(i)), ".png"),
-         width = 6,
-         height = 4)
-
+  plot_method_general[[i]] <- plot_i # add each plot into plot list
+  
 }
 
 ```
 
-# Methods used by time-range - %
+# Methods used by time-range
 
-```{r fig.width=15}
+```{r}
 
 # 1. Modify the data ----
 
@@ -331,168 +282,113 @@ data_method <- data_benthos %>%
   complete(SOVEREIGN1, Method, Time_range, fill = list(Abs = 0)) %>% 
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
-         Method = as.factor(Method)) %>% 
+         Method = as.factor(Method),
+         Method = factor(Method, levels = c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown"))) %>% 
   ungroup() %>% 
   arrange(SOVEREIGN1)
 
-# 2. Make the loop ----
+# Make the total for the text above the bars
+
+data_method_total <- data_method %>% 
+  group_by(SOVEREIGN1, Time_range) %>% 
+  summarise(Rel = sum(Rel),
+            Abs = sum(Abs),
+            Abs = paste0("n = ", Abs))
+
+# 2. Make the loop to produce each plot ----
+
+# 2.1 Create the empty list --
+
+plot_method_range <- list() # Empty list
+
+# 2.2 Loop --
 
 for (i in unique(data_method$SOVEREIGN1)) {
   
   data_method_i <- data_method %>% 
     filter(SOVEREIGN1 == i)
-  
-  plot_i <- ggplot(data_method_i, aes(x = Time_range, y = Rel, fill = Method)) +
-    #geom_bar(stat = "identity", color = "black") +
-    geom_bar(stat = "identity") +
-    scale_fill_manual(values = col_method,
-                      limits= c("Photo-quadrat", "PIT", "LIT", "Visual census", "Other methods", "Unknown")) +
-    ylab("Percentage of sites") +
-    labs(tag = "C") +
-    theme(axis.title.x = element_blank(),
-          plot.tag = element_text(size = 20))
-          
     
-  
-  ggsave(plot_i, 
-         filename = paste0("../figs/02_graph-transects-methods-by-time-range_", tolower(as.character(i)), ".png"),
-         width = 6,
-         height = 3)
-
-}
-
-```
-
-# Table
-
-```{r}
-
-# 1. Export table of method by time-range for each country ----
-
-data_method %>% 
-  select(-Rel) %>% 
-  pivot_wider(names_from = "Method", values_from = Abs) %>% 
-  arrange(SOVEREIGN1, Time_range) %>% 
-  select("SOVEREIGN1", "Time_range", "LIT", "Other methods", "Photo-quadrat",
-         "PIT", "Unknown", "Visual census") %>% 
-  group_by(SOVEREIGN1) %>% 
-  do(write_csv2(., paste0("../figs/03_table-methods-used-by-time-range_", tolower(unique(.$SOVEREIGN1)), ".csv")))
-
-```
-
-# Taxonomic precision general
-
-```{r}
-
-precision_taxo <- data_benthos %>% 
-   select(SOVEREIGN1, Category, Group, Family, Genus, Species) %>% 
-   mutate(Tax_lvl = case_when(!(is.na(Species)) ~ "Species",
-                             !(is.na(Genus)) ~ "Genus",
-                             !(is.na(Family)) ~ "Family",
-                             !(is.na(Group)) ~ "Group",
-                             !(is.na(Category)) ~ "Category")) %>%  
-   select(-Category, -Group, -Family, -Genus, -Species) %>% 
-   group_by(SOVEREIGN1, Tax_lvl) %>%
-   summarise(Absolute = n()) %>% 
-   ungroup(.) %>%
-   group_by(SOVEREIGN1) %>% 
-   mutate(Total = sum(Absolute),
-         Percentage = (100*Absolute)/Total,
-         Tax_lvl = as.factor(as.character(Tax_lvl)))
-
-for (i in unique(data_benthos$SOVEREIGN1)) {
-
-  precision_taxo_i <- precision_taxo %>% 
+  data_method_total_i <- data_method_total %>% 
     filter(SOVEREIGN1 == i)
   
-  plot_i <- ggplot() + # Plot
-      geom_bar(data = precision_taxo_i, 
-               aes(x = fct_rev(SOVEREIGN1), 
-                   y = Percentage,
-                   fill = fct_relevel(Tax_lvl, "Species", "Genus", "Family", "Group", "Category")),
-               stat = "identity") +
-      coord_flip() +
-      scale_fill_manual(name = "Taxonomic level",
-                      breaks = c("Category", "Group", "Family", "Genus", "Species"), 
-                      values = c("#3fc380", "#5c97bf", "#fad859", "#eb9532", "#e74c3c"),
-                      guide = guide_legend(title.position = "top"),
+  plot_i <- ggplot() +
+    geom_bar(data = data_method_i, aes(x = Time_range, y = Rel, fill = Method), 
+             stat = "identity", width = 0.7) +
+    geom_text(data = data_method_total_i, aes(x = Time_range, y = Rel, label = Abs), vjust = -1) +
+    scale_fill_manual(name = "Method",
+                      breaks = c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown"),
+                      values = c("#16a085", "#00b16a", "#00b5cc", "#3498db", "#19b5fe", "#6c7a89"),
                       drop = FALSE) +
-      scale_y_continuous(#name = element_blank(),
-                         breaks = c(0, 25, 50, 75, 100),
-                         labels= c("0 %", "25 %", "50 %", "75 %", "100 %"),
-                         limits = c(0,100)) +
-      labs(x = NULL,
-           tag = "D") + 
-      theme(plot.tag = element_text(size = 20),
-          legend.position = "top",
-          axis.title = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          panel.background = element_blank(),
-          panel.border = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          axis.line.x.bottom =  element_line(colour = "black"))
-    
-  ggsave(plot_i, 
-         filename = paste0("../figs/02_graph-transects-precision-taxo_", tolower(as.character(i)), ".png"),
-         width = 5,
-         height = 2)
+    scale_y_continuous(name = "Percentage of sites", 
+                       breaks = c(0, 25, 50, 75, 100), 
+                       limits = c(0,110)) +
+    labs(x = NULL, y = "Percentage of sites") +
+    theme(legend.position = "top",
+          plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) + 
+    guides(fill = guide_legend(title.position = "top", title.hjust = 0.5, nrow = 1))
+  
+  plot_method_range[[i]] <- plot_i # add each plot into plot list
+  
 }
-
-## Save table 
-
-write_csv2(precision_taxo, "../figs/02_percentage-precision-taxo.csv")
 
 ```
 
-# Taxonomic precision hard corals
+# Taxonomic precision by time-range
 
 ```{r}
 
 # 1. Modify the data ----
 
-taxo_coral <- data_benthos %>% 
-  filter(Category == "Hard living coral") %>% 
-  mutate(Group = ifelse(is.na(Group), "No", "Yes")) %>% 
-  group_by(SOVEREIGN1, Group) %>% 
-  count(name = "n_row") %>% 
+precision_taxo <- data_benthos %>% 
+   select(SOVEREIGN1, Year, Category, Group, Family, Genus, Species) %>% 
+   mutate(Tax_lvl = case_when(!(is.na(Species)) ~ "Species",
+                              !(is.na(Genus)) ~ "Genus",
+                              !(is.na(Family)) ~ "Family",
+                              !(is.na(Group)) ~ "Group",
+                              !(is.na(Category)) ~ "Category"),
+          Time_range = case_when(Year >= 1970 & Year < 2000 ~ "1970-1999",
+                                 Year >= 2000 & Year < 2010 ~ "2000-2009",
+                                 Year >= 2010 & Year < 2020 ~ "2010-2019")) %>% 
+  group_by(SOVEREIGN1, Tax_lvl, Time_range) %>% 
+  count(name = "Abs") %>% 
+  drop_na(Time_range) %>% 
   ungroup() %>% 
-  group_by(SOVEREIGN1) %>% 
-  mutate(total = sum(n_row)) %>% 
+  complete(SOVEREIGN1, Tax_lvl, Time_range, fill = list(Abs = 0)) %>% 
+  group_by(SOVEREIGN1, Time_range) %>% 
+  mutate(Rel = (Abs/sum(Abs))*100,
+         Time_range = as.factor(Time_range),
+         Tax_lvl = str_replace_all(Tax_lvl, c("Group" = "Subgroup",
+                                              "Category" = "Group")),
+         Tax_lvl = factor(Tax_lvl, levels = c("Group", "Subgroup", "Family", "Genus", "Species"))) %>% 
   ungroup() %>% 
-  mutate(row_rel = (n_row*100)/total)
+  arrange(SOVEREIGN1)
 
-# 2. Make the plot ----
+# 2. Make the loop to produce each plot ----
 
-for (i in unique(taxo_coral$SOVEREIGN1)) {
+# 2.1 Create the empty list --
 
-  precision_taxo_i <- taxo_coral %>% 
-    filter(SOVEREIGN1 == i)
+plot_precision_general <- list() # Empty list
+
+# 2.2 Loop --
+
+for (i in unique(precision_taxo$SOVEREIGN1)) {
   
-  plot_i <- ggplot(data = precision_taxo_i, aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
-  geom_bar(stat = "identity") +
-  coord_flip() + 
-  scale_fill_manual(breaks = c("Yes", "No"),
-                    values = c("#03a678", "#d64541"),
-                    name = "Shape",
-                    drop = FALSE) +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        panel.grid = element_blank(),
-        panel.border = element_rect(colour = "white"),
-        axis.line.x = element_line(colour = "black"),
-        legend.position = "top") +
-  scale_y_continuous(limits = c(0, 100), 
-                     expand = c(0,0), 
-                     labels = function(x) paste0(x, " %")) +
-  labs(y = "Percentage of rows")
-    
-  ggsave(plot_i, 
-         filename = paste0("../figs/02_graph-rows-precision-coral_", tolower(as.character(i)), ".png"),
-         width = 6,
-         height = 2)
+  plot_i <- precision_taxo %>% 
+    filter(SOVEREIGN1 == i) %>% 
+    ggplot(data = .) +
+    geom_bar(aes(x = Time_range, y = Rel, fill = Tax_lvl), 
+             stat = "identity", width = 0.7) +
+    scale_fill_manual(name = "Taxonomic level", 
+                      breaks = c("Group", "Subgroup", "Family", "Genus", "Species"),
+                      values = c("#ffec8b", "#f7ca18", "#eb9532", "#e74c3c", "#cf000f")) +
+    labs(x = NULL, y = "Percentage of rows") +
+    lims(y = c(0, 100)) + 
+    theme(legend.position = "top",
+          plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) + 
+    guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
+  
+  plot_precision_general[[i]] <- plot_i # add each plot into plot list
+  
 }
 
 ```
@@ -515,36 +411,41 @@ taxo_algae <- data_benthos %>%
   mutate(row_rel = (n_row*100)/total,
          Group = factor(Group, levels = c("Unknown", "Turf algae", "Macroalgae", "Coralline algae")))
 
-# 2. Make the plot ----
+# 2. Make the loop to produce each plot ----
+
+# 2.1 Create the empty list --
+
+plot_precision_algae <- list() # Empty list
+
+# 2.2 Loop --
 
 for (i in unique(taxo_algae$SOVEREIGN1)) {
-
-  precision_taxo_i <- taxo_algae %>% 
-    filter(SOVEREIGN1 == i)
   
-  plot_i <- ggplot(data = precision_taxo_i, aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
-  geom_bar(stat = "identity") +
-  coord_flip() + 
-  scale_fill_manual(breaks = c("Coralline algae", "Macroalgae", "Turf algae", "Unknown"),
-                    values = c("#e08283", "#00b16a", "#23cba7", "#6c7a89"),
-                    drop = FALSE) +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        panel.grid = element_blank(),
-        panel.border = element_rect(colour = "white"),
-        axis.line.x = element_line(colour = "black"),
-        legend.position = "top") +
-  scale_y_continuous(limits = c(0, 100), 
-                     expand = c(0,0), 
-                     labels = function(x) paste0(x, " %")) +
-  labs(y = "Percentage of rows",
-       tag = "E")
-    
-  ggsave(plot_i, 
-         filename = paste0("../figs/02_graph-rows-precision-algae_", tolower(as.character(i)), ".png"),
-         width = 6,
-         height = 2)
+  plot_i <- taxo_algae %>% 
+    filter(SOVEREIGN1 == i) %>% 
+    ggplot(data = ., aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
+      geom_bar(stat = "identity") +
+      coord_flip() + 
+      scale_fill_manual(name = "Subgroup of algae",
+                        breaks = c("Coralline algae", "Macroalgae", "Turf algae", "Unknown"),
+                        values = c("#e08283", "#00b16a", "#23cba7", "#6c7a89"),
+                        drop = FALSE) +
+      theme(axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.title.y = element_blank(),
+            panel.grid = element_blank(),
+            plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm"),
+            panel.border = element_rect(colour = "white"),
+            axis.line.x = element_line(colour = "black"),
+            legend.position = "top") +
+      scale_y_continuous(limits = c(0, 100), 
+                         expand = c(0,0), 
+                         labels = function(x) paste0(x, " %")) +
+      labs(y = "Percentage of rows") + 
+      guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
+  
+  plot_precision_algae[[i]] <- plot_i # add each plot into plot list
+  
 }
 
 ```
@@ -568,37 +469,69 @@ taxo_othfau <- data_benthos %>%
   mutate(row_rel = (n_row*100)/total,
          Group = factor(Group, levels = c("Unknown", "Tunicata", "Porifera", "Other groups", "Alcyonacea")))
 
-# 2. Make the plot ----
+# 2. Make the loop to produce each plot ----
+
+# 2.1 Create the empty list --
+
+plot_precision_othfau <- list() # Empty list
+
+# 2.2 Loop --
 
 for (i in unique(taxo_othfau$SOVEREIGN1)) {
-
-  precision_taxo_i <- taxo_othfau %>% 
-    filter(SOVEREIGN1 == i)
   
-  plot_i <- ggplot(data = precision_taxo_i, aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
-  geom_bar(stat = "identity") +
-  coord_flip() + 
-  scale_fill_manual(breaks = c("Alcyonacea", "Other groups", "Porifera", "Tunicata", "Unknown"),
-                    values = c("#e47833", "#f4b350", "#947cb0", "#fff9de", "#6c7a89"),
-                    drop = FALSE) +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        panel.grid = element_blank(),
-        panel.border = element_rect(colour = "white"),
-        axis.line.x = element_line(colour = "black"),
-        legend.position = "top") +
-  scale_y_continuous(limits = c(0, 100), 
-                     expand = c(0,0), 
-                     labels = function(x) paste0(x, " %")) +
-  labs(y = "Percentage of rows",
-       tag = "F")
-
-  ggsave(plot_i, 
-         filename = paste0("../figs/02_graph-rows-precision-other-fauna_", tolower(as.character(i)), ".png"),
-         width = 6,
-         height = 2)
+  plot_i <- taxo_othfau %>% 
+    filter(SOVEREIGN1 == i) %>% 
+    ggplot(data = ., aes(x = SOVEREIGN1, y = row_rel, fill = Group)) +
+      geom_bar(stat = "identity") +
+      coord_flip() + 
+      scale_fill_manual(name = "Subgroup of other fauna",
+                        breaks = c("Alcyonacea", "Other groups", "Porifera", "Tunicata", "Unknown"),
+                        values = c("#e47833", "#f4b350", "#947cb0", "#fff9de", "#6c7a89"),
+                        drop = FALSE) +
+      theme(axis.text.y = element_blank(),
+            axis.ticks.y = element_blank(),
+            axis.title.y = element_blank(),
+            panel.grid = element_blank(),
+            plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm"),
+            panel.border = element_rect(colour = "white"),
+            axis.line.x = element_line(colour = "black"),
+            legend.position = "top") +
+      scale_y_continuous(limits = c(0, 100), 
+                         expand = c(0,0), 
+                         labels = function(x) paste0(x, " %")) +
+      labs(y = "Percentage of rows") + 
+      guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
+  
+  plot_precision_othfau[[i]] <- plot_i # add each plot into plot list
+  
 }
+
+```
+
+# Assemblage of plots
+
+```{r}
+
+# 1. For loop to combine and export all the plots ----
+
+for (i in names(plot_method_general)) {
+  
+  plot_i <- ggarrange(plotlist = c(plot_years[i], plot_method_general[i], 
+                       plot_method_range[i], plot_precision_general[i],
+                       plot_precision_algae[i], plot_precision_othfau[i]), 
+          ncol = 2, nrow = 3, heights = c(0.9, 1.1, 0.5), 
+          labels = c("A", "B", "C", "D", "E", "F"),
+          font.label = list(size = 21, color = "black"))
+  
+  ggsave(plot = plot_i, 
+         filename = paste0("../figs/02_graph-description-method-combined_", 
+                str_replace_all(tolower(i), " ", "-"), ".png"),
+         width = 14, height = 13)
+  
+}
+
+# Issue on legends when using extrafont, see : 
+# https://stackoverflow.com/questions/36425003/using-r-package-extrafont-is-generating-error-font-width-unknown-for-character
 
 ```
 
