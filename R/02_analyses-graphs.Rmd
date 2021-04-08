@@ -34,7 +34,7 @@ library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
-library(cowplot) # To assemble plots
+library(ggpubr) # To assemble plots
 
 # 3. Set default ggplot theme ----
 
@@ -120,7 +120,7 @@ nb_obs <- data_benthos %>%
 # 3. left join ----
 
 left_join(nb_sites, nb_obs) %>% 
-  write_csv2(., "../figs/monitoring-effort-by-country.csv")
+  write_csv2(., "../figs/03_table-monitoring-effort-by-country.csv")
 
 ```
 
@@ -152,9 +152,10 @@ for (i in unique(data_years$SOVEREIGN1)) {
   plot_i <- data_years %>% 
     filter(SOVEREIGN1 == i) %>% 
     ggplot(., aes(x = Year, y = freq)) +
-      geom_histogram(stat = "identity", color = col_color_graph, fill = col_fill_graph) +
+      geom_histogram(stat = "identity", fill = "#6c7a89") +
       lims(x = c(1970, 2020)) +
-      labs(x = "Year", y = "Percentage of sites")
+      labs(x = "Year", y = "Percentage of sites") +
+      theme(plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm"))
   
   plot_years[[i]] <- plot_i # add each plot into plot list
   
@@ -200,7 +201,8 @@ data_method <- data_benthos %>%
   complete(Method, SOVEREIGN1, fill = list(Abs = 0)) %>% 
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
-        Method = as.factor(Method)) %>% 
+        Method = as.factor(Method),
+        Method = factor(Method, levels = rev(c("Photo-quadrat", "Visual census", "LIT", "PIT", "Other methods", "Unknown")))) %>% 
   ungroup() %>% 
   arrange(SOVEREIGN1)
 
@@ -216,18 +218,21 @@ for (i in unique(data_method$SOVEREIGN1)) {
   
   plot_i <- data_method %>% 
     filter(SOVEREIGN1 == i) %>% 
-    ggplot(data = ., aes(x = Method, y = Rel, label = paste0(round(Rel, 0), " %"))) +
-    geom_bar(stat = "identity", col = "black", fill = col_fill_graph) +
+    ggplot(data = ., aes(x = Method, y = Rel, label = paste0(round(Rel, 0), " %"), fill = Method)) +
+    geom_bar(stat = "identity", show.legend = FALSE) +
     geom_text(hjust = -0.2) +
     coord_flip() +
     theme(axis.text = element_text(size = 12),
           axis.title = element_text(size = 16),
-          plot.tag = element_text(size = 20)) +
-    scale_x_discrete(name = NULL, 
-                     limits = c("Unknown", "Other methods", "Visual census", "LIT", "PIT",  "Photo-quadrat")) +
+          plot.tag = element_text(size = 20),
+          plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) +
+    scale_fill_manual(breaks = c("Photo-quadrat", "Visual census", "LIT", "PIT", "Other methods", "Unknown"),
+                      values = c("#16a085", "#00b16a", "#00b5cc", "#3498db", "#19b5fe", "#6c7a89"),
+                      drop = FALSE) +
     scale_y_continuous(name = "Percentage of sites", 
                        breaks = c(0, 25, 50, 75, 100), 
-                       limits = c(0,110))
+                       limits = c(0,110)) +
+    labs(x = NULL)
   
   plot_method_general[[i]] <- plot_i # add each plot into plot list
   
@@ -309,9 +314,15 @@ for (i in unique(data_method$SOVEREIGN1)) {
     geom_bar(data = data_method_i, aes(x = Time_range, y = Rel, fill = Method), 
              stat = "identity", width = 0.7) +
     geom_text(data = data_method_total_i, aes(x = Time_range, y = Rel, label = Abs), vjust = -1) +
+    scale_fill_manual(name = "Method",
+                      breaks = c("Photo-quadrat", "Visual census", "LIT", "PIT", "Other methods", "Unknown"),
+                      values = c("#16a085", "#00b16a", "#00b5cc", "#3498db", "#19b5fe", "#6c7a89"),
+                      drop = FALSE) +
     labs(x = NULL, y = "Percentage of sites") +
     lims(y = c(0, 100)) + 
-    theme(legend.position = "top")
+    theme(legend.position = "top",
+          plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) + 
+    guides(fill = guide_legend(title.position = "top", title.hjust = 0.5, nrow = 1))
   
   plot_method_range[[i]] <- plot_i # add each plot into plot list
   
@@ -366,10 +377,12 @@ for (i in unique(precision_taxo$SOVEREIGN1)) {
              stat = "identity", width = 0.7) +
     scale_fill_manual(name = "Taxonomic level", 
                       breaks = c("Group", "Subgroup", "Family", "Genus", "Species"),
-                      values = c("#f1a9a0", "#e26a6a", "#e74c3c", "#f03434", "#cf000f")) +
+                      values = c("#ffec8b", "#f7ca18", "#eb9532", "#e74c3c", "#cf000f")) +
     labs(x = NULL, y = "Percentage of rows") +
     lims(y = c(0, 100)) + 
-    theme(legend.position = "top")
+    theme(legend.position = "top",
+          plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) + 
+    guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
   
   plot_precision_general[[i]] <- plot_i # add each plot into plot list
   
@@ -418,14 +431,15 @@ for (i in unique(taxo_algae$SOVEREIGN1)) {
             axis.ticks.y = element_blank(),
             axis.title.y = element_blank(),
             panel.grid = element_blank(),
-            plot.margin = margin(r = 0.75, l = 0.75, unit = "cm"),
+            plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm"),
             panel.border = element_rect(colour = "white"),
             axis.line.x = element_line(colour = "black"),
             legend.position = "top") +
       scale_y_continuous(limits = c(0, 100), 
                          expand = c(0,0), 
                          labels = function(x) paste0(x, " %")) +
-      labs(y = "Percentage of rows")
+      labs(y = "Percentage of rows") + 
+      guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
   
   plot_precision_algae[[i]] <- plot_i # add each plot into plot list
   
@@ -475,14 +489,15 @@ for (i in unique(taxo_othfau$SOVEREIGN1)) {
             axis.ticks.y = element_blank(),
             axis.title.y = element_blank(),
             panel.grid = element_blank(),
-            plot.margin = margin(r = 0.75, l = 0.75, unit = "cm"),
+            plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm"),
             panel.border = element_rect(colour = "white"),
             axis.line.x = element_line(colour = "black"),
             legend.position = "top") +
       scale_y_continuous(limits = c(0, 100), 
                          expand = c(0,0), 
                          labels = function(x) paste0(x, " %")) +
-      labs(y = "Percentage of rows")
+      labs(y = "Percentage of rows") + 
+      guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
   
   plot_precision_othfau[[i]] <- plot_i # add each plot into plot list
   
@@ -492,20 +507,28 @@ for (i in unique(taxo_othfau$SOVEREIGN1)) {
 
 # Assemblage of plots
 
-```{r fig.height=12, fig.width=12}
+```{r}
 
-plot_row1 <- plot_grid(plotlist = c(plot_years[1], plot_method_general[1]), 
-                       ncol = 2, labels = c("A", "B"))
+# 1. For loop to combine and export all the plots ----
 
-plot_row2 <- plot_grid(plotlist = c(plot_method_range[1], plot_precision_general[1]), 
-                       ncol = 2, labels = c("C", "D"))
+for (i in names(plot_method_general)) {
+  
+  plot_i <- ggarrange(plotlist = c(plot_years[i], plot_method_general[i], 
+                       plot_method_range[i], plot_precision_general[i],
+                       plot_precision_algae[i], plot_precision_othfau[i]), 
+          ncol = 2, nrow = 3, heights = c(0.9, 1.1, 0.5), 
+          labels = c("A", "B", "C", "D", "E", "F"),
+          font.label = list(size = 21, color = "black"))
+  
+  ggsave(plot = plot_i, 
+         filename = paste0("../figs/02_graph-description-method-combined_", 
+                str_replace_all(tolower(i), " ", "-"), ".png"),
+         width = 14, height = 13)
+  
+}
 
-plot_row3 <- plot_grid(plotlist = c(plot_precision_algae[1], plot_precision_othfau[1]), 
-                       ncol = 2, labels = c("E", "F"))
-
-cowplot::plot_grid(plot_row1, plot_row2, plot_row3, nrow = 3, rel_heights = c(2, 2, 0.75))
-
-ggsave("./../figs/03_id-dataviz.png", height = 12, width = 12)
+# Issue on legends when using extrafont, see : 
+# https://stackoverflow.com/questions/36425003/using-r-package-extrafont-is-generating-error-font-width-unknown-for-character
 
 ```
 
