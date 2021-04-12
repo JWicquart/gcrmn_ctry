@@ -34,7 +34,7 @@ library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
-library(ggpubr) # To assemble plots
+#library(ggpubr) # To assemble plots
 
 # 3. Set default ggplot theme ----
 

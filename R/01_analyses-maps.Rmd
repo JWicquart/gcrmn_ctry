@@ -323,8 +323,6 @@ for (i in list_classic) {
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Scalebar
-  #annotation_scale(location = "bl") +
   # Aesthetics
   guides(fill = guide_legend(override.aes = list(size = 4))) +
   scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
@@ -526,26 +524,7 @@ rm(data_eez_kiri, land_major_kiri, land_minor_kiri, land_atolls_kiri, data_benth
 # 3.3.1 France
 
 ```{r}
-#1. Data MPAs
-## Select french MPAs with coral reefs
-
-mpa_fr <- data_mpa %>% 
-  st_drop_geometry() %>%
-  filter(sovereign == "FRA") %>% 
-  #distinct(country, .keep_all = T) %>% 
-  filter(is_mpa==1) %>% 
-  arrange(country)
-
-amp_coral_fr <- data_mpa %>% 
-  filter(country %in% c("BLM", "GLP", "MAF", "MTQ", "MYT", "NCL", "PYF", "REU", "BLM;GLP;MAF;MTQ"	)) %>% 
-  arrange(country)
-
-
-
-## Calculate the number and surface of MPAs in tropical waters
-
-
-#france_area <- data_benthos %>% st_drop_geometry() %>% distinct(SOVEREIGN1, Location, .keep_all = T) %>%  filter(SOVEREIGN1 == "France") %>% arrange(Archipelago, Location)
+#1. Select the data for the French overseas territories
 
 data_eez_fr <- data_eez %>% 
     filter(SOVEREIGN1 == "France")
@@ -565,21 +544,19 @@ plot_i <- ggplot() +
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
+  geom_sf(data = coral_distribution,
+          color = "azure3", size = rel(0.2), alpha = 0.5,
+          show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_fr, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Scalebar
-  annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank()) +
   theme(legend.position = "none") +
   ggtitle("French Antillas")
@@ -599,21 +576,19 @@ plot_i <- ggplot() +
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
+  geom_sf(data = coral_distribution,
+          color = "azure3", size = rel(0.2), alpha = 0.5,
+          show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_fr, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Scalebar
-  annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank()) +
   theme(legend.position = "none") +
   ggtitle("New Caledonia")
@@ -632,21 +607,19 @@ plot_i <- ggplot() +
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
+  geom_sf(data = coral_distribution, 
+          color = "azure3", size = rel(0.2), alpha = 0.5,
+          show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_fr, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Scalebar
-  annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank()) +
   theme(legend.position = "none") +
   ggtitle("French Polynesia")
@@ -665,21 +638,20 @@ plot_i <- ggplot() +
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
+  geom_sf(data = coral_distribution, 
+          color = "azure3", size = rel(0.2), alpha = 0.5,
+          show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_fr, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Scalebar
-  annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  
   theme(axis.title = element_blank()) +
   theme(legend.position = "none") +
   ggtitle("Wallis and Futuna")
@@ -687,7 +659,7 @@ plot_i <- ggplot() +
 
 ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_wallis_and_futuna.png"))
 
-# 2.4. Clipperton
+# 2.5. Clipperton
 
 data_boundary_i <- data_boundary %>% 
     filter(sub_country == "clipperton")
@@ -696,20 +668,18 @@ plot_i <- ggplot() +
   # Adding the EEZ
   geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
   # Adding territories
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
+  geom_sf(data = coral_distribution, 
              color = "azure3", size = rel(0.2), alpha = 0.5,
              show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_fr, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Scalebar
-  annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank()) +
   theme(legend.position = "none") +
   ggtitle("Clipperton")
@@ -717,7 +687,7 @@ plot_i <- ggplot() +
 
 ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_clipperton.png"))
 
-# 2.5. Mascarene and Eparses Islands
+# 2.6. Mascarene and Eparses Islands
 
 data_boundary_i <- data_boundary %>% 
     filter(sub_country == "west_indian")
@@ -728,21 +698,19 @@ plot_i <- ggplot() +
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
+  geom_sf(data = coral_distribution, 
+          color = "azure3", size = rel(0.2), alpha = 0.5,
+          show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_fr, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
            ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Scalebar
-  annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank()) +
   theme(legend.position = "none") +
   ggtitle("Eparses and Mascarene Islands")
@@ -750,27 +718,25 @@ plot_i <- ggplot() +
 
 ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_west_indian.png"))
 
-#2.6. Global map France
+#2.7. Global map France
 plot_i <- ggplot() +
   # Adding the EEZ
   geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
   # Adding territories
   geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_point(data = coral_distribution, aes(x = long, y = lat),
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
+  geom_sf(data = coral_distribution,
+          color = "azure3", size = rel(0.2), alpha = 0.5,
+          show.legend = FALSE) +
   geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
   geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
   # Adding the location sites
-  geom_sf(data = data_benthos_fr, aes(col =  interval_class)) +
+  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
   # Define boundaries
   coord_sf(ylim = c(-50,50), expand = FALSE) +
-  # Scalebar
-  annotation_scale(location = "bl") +
   # Aesthetics
   guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(axis.title = element_blank()) 
 
 ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_global.png"))
