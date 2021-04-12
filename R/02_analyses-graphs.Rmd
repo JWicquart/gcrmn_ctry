@@ -382,7 +382,6 @@ for (i in unique(precision_taxo$SOVEREIGN1)) {
                       breaks = c("Group", "Subgroup", "Family", "Genus", "Species"),
                       values = c("#ffec8b", "#f7ca18", "#eb9532", "#e74c3c", "#cf000f")) +
     labs(x = NULL, y = "Percentage of rows") +
-    lims(y = c(0, 100)) + 
     theme(legend.position = "top",
           plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) + 
     guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
