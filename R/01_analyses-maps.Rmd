@@ -409,7 +409,10 @@ data_benthos_range_fiji <- data_benthos_range %>%
   mutate(long = st_coordinates(.)[,"X"],
          lat = st_coordinates(.)[,"Y"]) %>% 
   st_drop_geometry() %>% 
-  mutate(long = ifelse(long < 0, long + 360, long))
+  mutate(long = ifelse(long < 0, long + 360, long),
+         #plot the longest time series on top of the others
+         intervall_class = factor(interval_class, levels = c("1", "2-5", "6-10", "11-20", ">20"))) %>% 
+  arrange(interval_class)
 
 # 2. Make the plot ----
 
@@ -422,7 +425,7 @@ ggplot() +
   geom_polygon(data = land_minor_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
   geom_polygon(data = land_atolls_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
   
-  geom_point(data = data_benthos_range_fiji, aes(x = long, y = lat, col = interval_class)) +
+  geom_point(data = data_benthos_range_fiji, shape = 21, col = "black", size = 2.5, aes(x = long, y = lat,  fill = interval_class)) + 
   guides(colour = guide_legend(override.aes = list(size = 4))) +
   scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   scale_x_continuous(breaks = c(170, 175, 180, 185), labels = c("170°E","175°E", "180°", "175°W"), limits = c(170, 185)) +
