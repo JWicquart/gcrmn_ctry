@@ -28,6 +28,7 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 
 library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
+library(rgdal) # To open shapefile
 
 ```
 
@@ -153,5 +154,39 @@ st_crs(data_benthos_range) <- 4326
 
 save(data_benthos_range, 
      file = "./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
+
+```
+
+# 5. Bind background maps in one file
+
+```{r}
+
+# 1. Load the maps ----
+
+# 1.1 Major islands --
+
+land_major <- readOGR("./../data/01_maps/ne_10m_land/ne_10m_land.shp", "ne_10m_land") %>% 
+  st_as_sf() %>% 
+  mutate(scalerank = as.character(scalerank))
+
+# 1.2 Minor islands --
+
+land_minor <- readOGR("./../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp", "ne_10m_minor_islands") %>% 
+  st_as_sf()
+
+# 1.3 Reefs data --
+
+land_reefs <- readOGR("./../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp", "ne_10m_reefs") %>% 
+  st_as_sf()
+
+# 2. Bind maps and save object ----
+
+background_map <- bind_rows(land_reefs, land_minor) %>% 
+  bind_rows(., land_major) %>% 
+  st_as_sf(., crs = "+proj=longlat +datum=WGS84") 
+
+# 3. Save the data ----
+
+save(background_map, file = "./../data/01_maps/00_background_map.RData")
 
 ```
