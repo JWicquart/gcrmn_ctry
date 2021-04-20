@@ -1,0 +1,135 @@
+---
+title: "Analyses - MPA by country"
+author : "Nina Prasil & Jeremy Wicquart"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: "cosmo"
+    highlight: tango
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+
+```
+
+# Import functions, packages and data
+
+```{r base}
+
+
+
+```
+
+```{r}
+
+## MPAs from MPAtlas ----
+data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") 
+# Extract MPAs for the 30 countries ----
+data_mpa_top30 <- data_mpa %>% 
+  filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
+                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
+                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
+  filter(is_mpa == 1) %>% 
+  group_by(sovereign) %>% 
+  mutate(surf_mpa = st_area(geometry)) %>% 
+  st_drop_geometry() %>% 
+  summarise(nb_mpa = n(),
+            surface_mpa = sum(surf_mpa)) %>% 
+  ungroup()
+# Converts the surface in km²
+units(data_mpa_top30$surface_mpa) <- "km^2"
+## Extract all the MPAs that contain coral reefs for the top 30 ----
+# Does not take into account the protection level
+mpa_w_reef <- data_mpa %>% 
+  #filter(sovereign %in% c("CUB")) %>% 
+  filter(is_mpa == 1) %>% 
+  #spatial join btw coral distrib and the location of the MPAs
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  st_drop_geometry() %>% 
+  #retain only one line per MPA
+  distinct(mpa_id, .keep_all = T) %>% 
+  group_by(sovereign) %>% 
+  summarise(nb_mpa_w_cr = n()) %>% 
+  ungroup() %>% 
+  arrange(sovereign) %>% 
+  left_join(data_mpa_top30, .)
+## Save table mpa
+write_csv2(mpa_w_reef, "../figs/02_mpa-with-reef.csv")
+mpa_hp_reef <- data_mpa %>% 
+  filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
+                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
+                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  st_drop_geometry() %>% 
+  #retain only one line per MPA
+  distinct(mpa_id, .keep_all = T) %>% 
+  filter(is_mpa == 1) %>% 
+  filter(no_take %in% c("All", "Part")) %>% 
+  group_by(sovereign) %>% 
+  summarise(nb_hp_zone = n()) %>% 
+  ungroup() %>% 
+  arrange(sovereign)
+  
+### Nb of HP MPA zones encompassing coral reefs - unfinished
+hp_reefs <- data_mpa %>% 
+    filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
+                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
+                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  st_drop_geometry() %>% 
+  distinct(mpa_id, .keep_all = T) %>% 
+  filter(is_mpa == 1) %>% 
+  distinct(mpa_id, no_take, .keep_all = T) %>%
+  group_by(sovereign, no_take) %>%
+  mutate(nb = n()) %>% 
+  arrange(sovereign)
+temp <- data_mpa %>% 
+  st_join(coral_distribution, .,  left = FALSE) %>% 
+  filter(sovereign %in% c("AUS")) %>% 
+  st_drop_geometry() %>% 
+  distinct(mpa_id, no_take, .keep_all=T) %>% 
+  arrange(mpa_id)
+## Plot ----  
+ggplot() +
+  # Adding the EEZ
+  geom_sf(data = data_eez, fill = col_eez, color = col_eez_b, alpha = 0.8) +
+  # Adding territories
+  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = coral_distribution, 
+          color = "azure3", 
+          size = rel(0.2), 
+          alpha = 0.5,
+          show.legend = FALSE) +
+  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
+  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
+  # Adding the location sites
+  geom_sf(data = data_mpa) +
+  # Aesthetics
+  theme(axis.title = element_blank())
+# 5.8. MPAs from The protected planet database
+info_mpa <- read.csv("./../data/02_mpa/WDPA_WDOECM_marine_csv/WDPA_WDOECM_marine_csv.csv")
+data_mpa0 <- read_sf("./../data/WDPA_WDOECM_wdpa_shp0/WDPA_WDOECM_wdpa_shp-polygons.shp") %>% 
+  filter(MARINE != 0)
+
+```
+
+# Reproducibility
+
+```{r reprod}
+
+# 1. Reproducibility ----
+
+sessionInfo()
+
+```
+
+---
+Nina PRASIL & Jeremy WICQUART | `r format(Sys.time())`

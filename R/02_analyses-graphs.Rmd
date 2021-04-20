@@ -120,7 +120,7 @@ nb_obs <- data_benthos %>%
 # 3. left join ----
 
 left_join(nb_sites, nb_obs) %>% 
-  write_csv2(., "../figs/03_table-monitoring-effort-by-country.csv")
+  write_csv2(., "../figs/04_table-monitoring-effort-by-country.csv")
 
 ```
 
@@ -523,7 +523,7 @@ for (i in names(plot_method_general)) {
           font.label = list(size = 21, color = "black"))
   
   ggsave(plot = plot_i, 
-         filename = paste0("../figs/02_graph-description-method-combined_", 
+         filename = paste0("../figs/03_graph-description-method-combined_", 
                 str_replace_all(tolower(i), " ", "-"), ".png"),
          width = 14, height = 13)
   
