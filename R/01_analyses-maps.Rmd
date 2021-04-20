@@ -14,209 +14,154 @@ output:
 ---
 
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+
 ```
 
 # 1. Import functions, packages and data
 
-```{r base}
+```{r}
+
 # 1. Source functions ----
+
 source("functions/graphical_par.R")
 source("functions/theme_map.R")
+source("functions/ggplot_map_eez.R")
+source("functions/ggplot_map_global.R")
+
+windowsFonts("ArialMT" = windowsFont("ArialMT"))
+
 # 2. Required packages ----
+
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
-library(lwgeom)
-library(rgdal)
-library(ggspatial) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
+library(ggpubr) # To assemble plots
+library(ggsflabel)
+
 # 3. Set default ggplot theme ----
+
 theme_set(theme_map())
-# 4. Define the CRS for the global map ----
-crs_global <- "+proj=moll"
-# 5. Import data ----
-# 5.1 Data benthos top 30 (summarized, with time range) --
-load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
-# transform interval_class in levels
-levels(data_benthos_range$interval_class)
-# 5.2 Data benthos top 30 (raw) --
+
+# 4. Load data ----
+
+# 4.1 Data benthos - Raw (top 30) --
+
 load("./../data/00_filtered/00-data_benthos-top_30.RData")
-# 5.3 EEZ data --
-data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
-# 5.4 Background data map --
+
+# 4.2 Data benthos - Summarised with time-range (top 30) --
+
+load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
+
+# 4.3 EEZ data --
+
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
+  filter(SOVEREIGN1 %in% unique(data_benthos$SOVEREIGN1)) # Extract top 30 countries
+
+# 4.4 Background maps --
+
+load(file = "./../data/01_maps/00_background_map.RData")
+
+# 4.5 Background maps country boundaries --
+
 land_boundary <- read_sf("../data/01_maps/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp")
-land_major <- read_sf("../data/01_maps/ne_10m_land/ne_10m_land.shp") 
-land_minor <- read_sf("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp") 
-land_atolls <- read_sf("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp")
-# 5.5 Create the background --
+
+# 4.6 bbox file --
+
+data_bbox <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
+
+# 4.7 Coral distribution --
+
+coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") %>% 
+  st_as_sf(., coords = c("long", "lat"), crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+```
+
+# 2. Global maps
+
+```{r}
+
+# 1. Transform data to desired projection ----
+
+# 1.1 Define the CRS of global maps (Mollweide) --
+
+crs_global <- "+proj=moll"
+
+# 1.2 Transform the projection of EEZ data --
+
+data_eez <- data_eez %>% 
+  st_transform(., crs = crs_global)
+
+# 1.3 Transform the projection for background map --
+
+background_map <- background_map %>% 
+  st_transform(., crs = crs_global)
+
+# 1.4 Create the background --
+
 lats <- c(90:-90, -90:90, 90)
 longs <- c(rep(c(180, -180), each = 181), 180)
+
 world_map_background <- list(cbind(longs, lats)) %>%
   st_polygon() %>%
   st_sfc(crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") %>% 
   st_sf() %>%
   st_transform(crs = crs_global)
-# 5.6 Boundary data --
-data_boundary <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
-# 5.7. Coral distribution data ----
-coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv")
-#%>%   st_as_sf(., coords = c("long", "lat")) 
-coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") %>% 
-  st_as_sf(., coords = c("long", "lat"))
-# Add a CRS to the database (CRS = WGS84, ESPG = 4326)
-st_crs(coral_distribution) <- 4326
-#ggplot() + geom_sf(data = coral_distribution)
-```
-# 1.2. MPAs
-Need to merge all three files of points and do the same for the polygons to create a layer of points and one of polygons
-```{r}
-## MPAs from MPAtlas ----
-data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") 
-# Extract MPAs for the 30 countries ----
-data_mpa_top30 <- data_mpa %>% 
-  filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
-                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
-  filter(is_mpa == 1) %>% 
-  group_by(sovereign) %>% 
-  mutate(surf_mpa = st_area(geometry)) %>% 
-  st_drop_geometry() %>% 
-  summarise(nb_mpa = n(),
-            surface_mpa = sum(surf_mpa)) %>% 
-  ungroup()
-# Converts the surface in km²
-units(data_mpa_top30$surface_mpa) <- "km^2"
-## Extract all the MPAs that contain coral reefs for the top 30 ----
-# Does not take into account the protection level
-mpa_w_reef <- data_mpa %>% 
-  #filter(sovereign %in% c("CUB")) %>% 
-  filter(is_mpa == 1) %>% 
-  #spatial join btw coral distrib and the location of the MPAs
-  st_join(coral_distribution, .,  left = FALSE) %>% 
-  st_drop_geometry() %>% 
-  #retain only one line per MPA
-  distinct(mpa_id, .keep_all = T) %>% 
-  group_by(sovereign) %>% 
-  summarise(nb_mpa_w_cr = n()) %>% 
-  ungroup() %>% 
-  arrange(sovereign) %>% 
-  left_join(data_mpa_top30, .)
-## Save table mpa
-write_csv2(mpa_w_reef, "../figs/02_mpa-with-reef.csv")
-mpa_hp_reef <- data_mpa %>% 
-  filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
-                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
-  st_join(coral_distribution, .,  left = FALSE) %>% 
-  st_drop_geometry() %>% 
-  #retain only one line per MPA
-  distinct(mpa_id, .keep_all = T) %>% 
-  filter(is_mpa == 1) %>% 
-  filter(no_take %in% c("All", "Part")) %>% 
-  group_by(sovereign) %>% 
-  summarise(nb_hp_zone = n()) %>% 
-  ungroup() %>% 
-  arrange(sovereign)
-  
-### Nb of HP MPA zones encompassing coral reefs - unfinished
-hp_reefs <- data_mpa %>% 
-    filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
-                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
-  st_join(coral_distribution, .,  left = FALSE) %>% 
-  st_drop_geometry() %>% 
-  distinct(mpa_id, .keep_all = T) %>% 
-  filter(is_mpa == 1) %>% 
-  distinct(mpa_id, no_take, .keep_all = T) %>%
-  group_by(sovereign, no_take) %>%
-  mutate(nb = n()) %>% 
-  arrange(sovereign)
-temp <- data_mpa %>% 
-  st_join(coral_distribution, .,  left = FALSE) %>% 
-  filter(sovereign %in% c("AUS")) %>% 
-  st_drop_geometry() %>% 
-  distinct(mpa_id, no_take, .keep_all=T) %>% 
-  arrange(mpa_id)
-## Plot ----  
-ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution, 
-          color = "azure3", 
-          size = rel(0.2), 
-          alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_mpa) +
-  # Aesthetics
-  theme(axis.title = element_blank())
-# 5.8. MPAs from The protected planet database
-info_mpa <- read.csv("./../data/02_mpa/WDPA_WDOECM_marine_csv/WDPA_WDOECM_marine_csv.csv")
-data_mpa0 <- read_sf("./../data/WDPA_WDOECM_wdpa_shp0/WDPA_WDOECM_wdpa_shp-polygons.shp") %>% 
-  filter(MARINE != 0)
-  
-```
 
+# 2. Create the plot for each of the countries ----
 
-# 2. Global maps
+# 2.1 Base plot --
 
-```{r}
-# 1. Transform data to desired projection (Mollweide) ----
-data_eez_trans <- data_eez %>% 
-  st_transform(., crs = crs_global)
-land_major_trans <- land_major %>% 
-    st_transform(., crs = crs_global)
-land_minor_trans <- land_minor %>% 
-  st_transform(., crs = crs_global)
-land_atolls_trans <- land_atolls %>% 
-  st_transform(., crs = crs_global)
-# 2. Select the 3 countries ----
-top_30 <- data_boundary %>% 
-  select(SOVEREIGN1) %>% 
-  distinct(.) 
-# 3. Create all the plots ----
-results <- data_eez_trans %>%
-  filter(SOVEREIGN1 %in% top_30$SOVEREIGN1) %>% 
-  group_by(SOVEREIGN1) %>%
-  do(plot = ggplot() +
-      geom_sf(data = world_map_background, fill = "#56B4E950", color = "grey30", size = 0.5/.pt) +
-      geom_sf(data = land_major_trans, fill = col_fill_map, col = col_color_map) +
-      geom_sf(data = ., col = col_eez_g, fill = col_eez_g, alpha = 0.7) +
-      geom_sf(data = land_minor_trans, fill = col_fill_map, col = col_color_map) +
-      geom_sf(data = land_atolls_trans, fill = col_fill_map, col = col_color_map) +
-      theme(strip.background = element_rect(fill = "transparent", color = NA),
-            plot.background = element_rect(fill = "transparent", color = NA),
-            panel.grid = element_blank(),
-            panel.background = element_blank(),
-            panel.border = element_blank()))
-# 3. Export all the plots ----
-for (i in 1:nrow(results)) {
+base_ggplot <- ggplot() +
+  geom_sf(data = world_map_background, fill = "#56B4E950", color = "grey30", size = 0.5/.pt) +
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  theme(strip.background = element_rect(fill = "transparent", color = NA),
+        plot.background = element_rect(fill = "transparent", color = NA),
+        panel.grid = element_blank(),
+        panel.background = element_blank(),
+        panel.border = element_blank())
+
+# 2.2 Loop to create all the plots --
+
+for (i in as.character(unique(data_eez$SOVEREIGN1))) {
   
-  ggsave(cowplot::plot_grid(plotlist = results$plot[i]), 
-         filename = paste0("../figs/01_global-map-by-country_", tolower(as.character(results[i, "SOVEREIGN1"])), ".png"))
+  data_eez_i <- data_eez %>% 
+    filter(SOVEREIGN1 == i)
+  
+  plot_i <- base_ggplot +
+    geom_sf(data = data_eez_i, col = col_eez_g, fill = col_eez_g, alpha = 0.7)
+  
+ ggsave(plot_i, 
+        filename = paste0("../figs/01_global-map-by-country_", str_replace_all(tolower(i), " ", "-"), ".png"),
+        height = 4)
+  
 }
+
+# 3. Remove data ----
+
+rm(world_map_background, plot_i, data_eez_i, base_ggplot, crs_global)
+
 ```
 
 # 3. Individual maps
 
-# 3.1 Classic maps
+## 3.1 Classic maps
 
 ```{r}
+
 # 1. Create list of country to plot ----
-list_classic <- data_boundary %>% 
+
+data_bbox_classic <- data_bbox %>% 
   filter(plot_type == "classic") %>% 
   distinct(SOVEREIGN1) %>% 
   pull()
-list_classic <- c("Mexico")
+
 # 2. Make the loop ----
-for (i in list_classic) {
+
+for (i in data_bbox_classic) {
   
   data_eez_i <- data_eez %>% 
     filter(SOVEREIGN1 == i)
@@ -224,453 +169,331 @@ for (i in list_classic) {
   data_benthos_i <- data_benthos_range %>% 
     filter(SOVEREIGN1 == i)
   
-  data_boundary_i <- data_boundary %>% 
+  data_boundary_i <- data_bbox %>% 
     filter(SOVEREIGN1 == i)
   
   plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution,
-          col = "azure3", size = rel(0.2), alpha = 0.5,
-          show.legend = FALSE) +
-  #geom_sf(data = data_eez_i, color = col_eez_b, fill = NULL) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_i, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(fill = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank())
+    # EEZ
+    geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b, alpha = 0.8) +
+    # Coral reef distribution
+    geom_sf(data = coral_distribution, col = "azure3", size = rel(0.2), alpha = 0.5, show.legend = FALSE) +
+    # Background maps
+    geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+    geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
+    # Location sites
+    geom_sf(data = data_benthos_i, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
+    # Set boundaries
+    coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
+             ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
+    # Aesthetics
+    guides(fill = guide_legend(override.aes = list(size = 4))) +
+    scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+    theme(axis.title = element_blank())
   
-  ggsave(plot_i, filename = paste0("../figs/01_individual-map-by-country_", tolower(as.character(i)), ".png"))
-  
+  ggsave(plot_i, filename = paste0("../figs/01_individual-map-by-country_", str_replace_all(tolower(i), " ", "-"), ".png"))
+
 }
+
+# 3. Remove data ----
+
+rm(data_bbox_classic, data_eez_i, data_benthos_i, data_boundary_i, plot_i)
+
 ```
 
+## 3.2 Overlap maps
 
-# 3.2 Overlap maps
-# 3.2.1 Projection overlaps
+### 3.2.1 Change projection
 
 ```{r}
-# 1. Load data ----
-# 1.2 Land major --
-land_major_ovlp <- readOGR("../data/01_maps/ne_10m_land/ne_10m_land.shp", "ne_10m_land") 
-land_major_ovlp <- fortify(land_major_ovlp)
-land_major_ovlp <- land_major_ovlp %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(land_major_ovlp, .)
-# 1.3 Land minor --
-land_minor_ovlp <- readOGR("../data/01_maps/ne_10m_minor_islands/ne_10m_minor_islands.shp", "ne_10m_minor_islands") 
-land_minor_ovlp <- fortify(land_minor_ovlp)
-land_minor_ovlp <- land_minor_ovlp %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(land_minor_ovlp, .)
-# 1.4 Land atolls --
-land_atolls_ovlp <- readOGR("../data/01_maps/ne_10m_reefs/ne_10m_reefs.shp", "ne_10m_reefs")
-land_atolls_ovlp <- fortify(land_atolls_ovlp)
-land_atolls_ovlp <- land_atolls_ovlp %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(land_atolls_ovlp, .)
-# 1.5 Coral reefs
-coral_distribution_ovlp <- coral_distribution %>% 
-  mutate(long = st_coordinates(.)[,"X"],
-         lat = st_coordinates(.)[,"Y"]) %>% 
-  st_drop_geometry() %>% 
-  mutate(long = ifelse(long < 0, long + 360, long))
+
+
+
 ```
 
-# 3.2.2 Fiji
+### 3.2.2 Fiji
 
 ```{r}
-# 1. Load data ----
-# 1.1 EEZ data --
-data_eez_fiji <- readOGR("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp", "eez_v11")
-data_eez_fiji <- subset(data_eez_fiji, SOVEREIGN1 == "Fiji")
-data_eez_fiji <- fortify(data_eez_fiji)
-data_eez_fiji <- data_eez_fiji %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(data_eez_fiji, .)
-# 1.2 Data benthos range --
-data_benthos_range_fiji <- data_benthos_range %>% 
-  filter(SOVEREIGN1 == "Fiji") %>% 
-  mutate(long = st_coordinates(.)[,"X"],
-         lat = st_coordinates(.)[,"Y"]) %>% 
-  st_drop_geometry() %>% 
-  mutate(long = ifelse(long < 0, long + 360, long),
-         #plot the longest time series on top of the others
-         intervall_class = factor(interval_class, levels = c("1", "2-5", "6-10", "11-20", ">20"))) %>% 
-  arrange(interval_class)
 
-# 2. Make the plot ----
-ggplot() +
-  geom_polygon(data = data_eez_fiji, aes(x = long, y = lat, group = group), fill = col_eez, alpha = 0.8) +
-  geom_point(data = coral_distribution_ovlp, aes(x= long, y = lat), 
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
-  geom_polygon(data = land_major_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  geom_polygon(data = land_minor_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  geom_polygon(data = land_atolls_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  
-  geom_point(data = data_benthos_range_fiji, shape = 21, col = "black", size = 2.5, aes(x = long, y = lat,  fill = interval_class)) + 
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  scale_x_continuous(breaks = c(170, 175, 180, 185), labels = c("170°E","175°E", "180°", "175°W"), limits = c(170, 185)) +
-  scale_y_continuous(breaks = c(-25, -20, -15, -10), labels = c("25°S", "20°S", "15°S", "10°S"), limits = c(c(-26, -9))) +
-  coord_quickmap() +
-  guides(fill = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) 
-  # Scalebar
-  #annotation_scale(location = "bl", plot_unit = "km") 
-# 3. Export the map ----
-ggsave(filename = "../figs/01_individual-map-by-country_fiji.png")
-# 4. Remove useless objects ----
-#rm(data_eez_fiji, land_major_fiji, land_minor_fiji, land_atolls_fiji, data_benthos_range_fiji)
-# Another solution
-# https://stackoverflow.com/questions/58662438/sf-ggplot-trying-to-map-fiji-islands
-```
-# 3.2.1 Kiribati
 
-```{r}
-# 1. Load data ----
-# 1.1 EEZ data --
-data_eez_kiri <- readOGR("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp", "eez_v11")
-data_eez_kiri <- subset(data_eez_kiri, SOVEREIGN1 == "Kiribati")
-data_eez_kiri <- fortify(data_eez_kiri)
-data_eez_kiri <- data_eez_kiri %>% 
-  mutate(long = long + 360) %>% 
-  bind_rows(data_eez_kiri, .)
-# 1.2 Data benthos range --
-data_benthos_range_kiri <- data_benthos_range %>% 
-  filter(SOVEREIGN1 == "Kiribati") %>% 
-  mutate(long = st_coordinates(.)[,"X"],
-         lat = st_coordinates(.)[,"Y"]) %>% 
-  st_drop_geometry() %>% 
-  mutate(long = ifelse(long < 0, long + 360, long))
-# 2. Make the plot ----
-ggplot() +
-  geom_polygon(data = data_eez_kiri, aes(x = long, y = lat, group = group), fill = col_eez, alpha = 0.8) +
-  geom_point(data = coral_distribution_ovlp, aes(x= long, y = lat), 
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
-  geom_polygon(data = land_major_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  geom_polygon(data = land_minor_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  geom_polygon(data = land_atolls_ovlp, aes(x = long, y = lat, group = group), fill = col_fill_map, col = col_color_map) +
-  
-  geom_point(data = data_benthos_range_kiri, shape = 21, col = "black", size = 3, aes(x = long, y = lat, fill = interval_class)) +
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  scale_x_continuous(breaks = c(170, 180, 190, 200, 210), 
-                     labels = c("170°E","180°", "170°W", "160°W", "150°W"),
-                     limits = c(165, 215)) +
-  scale_y_continuous(breaks = c(-15, -10, - 5, 0, 5, 10), 
-                     labels = c("15°S", "10°S", "5°S", "0°", "5°N", "10°N"), 
-                     limits = c(c(-15, 10))) +
-  coord_quickmap() +
-  guides(fill = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank())
-  # Scalebar
-  #annotation_scale(location = "bl", plot_unit = "km") 
-# 3. Export the map ----
-ggsave(filename = "../figs/01_individual-map-by-country_kiribati.png")
-# 4. Remove useless objects ----
-rm(data_eez_kiri, land_major_kiri, land_minor_kiri, land_atolls_kiri, data_benthos_range_kiri)
-# Another solution
-# https://stackoverflow.com/questions/58662438/sf-ggplot-trying-to-map-fiji-islands
+
 ```
 
-
-
-
-
-
-# 3.3 Composed maps
-
-# 3.3.1 France
+### 3.2.3 Kiribati
 
 ```{r}
-#1. Select the data for the French overseas territories
-data_eez_fr <- data_eez %>% 
-    filter(SOVEREIGN1 == "France")
-  
-data_benthos_fr <- data_benthos_range %>% 
-    filter(SOVEREIGN1 == "France")
-# 2. Make the individual maps
-# 2.1. French Antillas
-data_boundary_i <- data_boundary %>% 
-    filter(sub_country == "antilles_fr")
-  
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution,
-          color = "azure3", size = rel(0.2), alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "none") +
-  ggtitle("French Antillas")
-  
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_french_antillas.png"))
-  
-# 2.2. New Caledonia
-data_boundary_i <- data_boundary %>% 
-    filter(sub_country == "new_caledonia")
-  
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution,
-          color = "azure3", size = rel(0.2), alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "none") +
-  ggtitle("New Caledonia")
-  
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_new_caledonia.png"))
-# 2.3. French Polynesia
-data_boundary_i <- data_boundary %>% 
-    filter(sub_country == "french_polynesia")
-  
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution, 
-          color = "azure3", size = rel(0.2), alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "none") +
-  ggtitle("French Polynesia")
-  
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_french_polynesia.png"))
-# 2.4. Wallis and Futuna
-data_boundary_i <- data_boundary %>% 
-    filter(sub_country == "wallis_and_futuna")
-  
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution, 
-          color = "azure3", size = rel(0.2), alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "none") +
-  ggtitle("Wallis and Futuna")
-  
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_wallis_and_futuna.png"))
-# 2.5. Clipperton
-data_boundary_i <- data_boundary %>% 
-    filter(sub_country == "clipperton")
-  
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = coral_distribution, 
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "none") +
-  ggtitle("Clipperton")
-  
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_clipperton.png"))
-# 2.6. Mascarene and Eparses Islands
-data_boundary_i <- data_boundary %>% 
-    filter(sub_country == "west_indian")
-  
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution, 
-          color = "azure3", size = rel(0.2), alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "none") +
-  ggtitle("Eparses and Mascarene Islands")
-  
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_west_indian.png"))
-#2.7. Global map France
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_fr, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution,
-          color = "azure3", size = rel(0.2), alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_fr, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(ylim = c(-50,50), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) 
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-france_global.png"))
+
+
+
 ```
 
-# 3.3.2 USA
+## 3.3 Composed maps
+
+### 3.3.1 France
 
 ```{r}
-temp <- data_benthos_range %>% 
-  filter(SOVEREIGN1 == "United States") %>% 
-  st_drop_geometry() %>% 
-  distinct(Area, Country, Location, .keep_all = T)
-data_eez_us <- data_eez %>% 
-    filter(SOVEREIGN1 == "United States")
-  
-data_benthos_us <- data_benthos_range %>% 
-  filter(SOVEREIGN1 == "United States") 
-#2.6. Global map USA
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_us, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution,
-          color = "azure3",
-          size = rel(0.2), 
-          alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_us, shape = 21, col = "black", aes(fill = interval_class), size = 3) +
-  # Define boundaries
-  coord_sf(ylim = c(-50,50), expand = FALSE) +
-  # Aesthetics
-  guides(fill = guide_legend(override.aes = list(size = 4))) +
+
+# 1. Filter territories -----
+
+data_eez_sovereign <- data_eez %>% 
+  filter(TERRITORY1 %in% c("French Polynesia", "Mayotte", "Ile Tromelin", "New Caledonia", 
+                           "Réunion", "Europa Island", "Juan de Nova Island", "Bassas da India", 
+                           "Clipperton Island", "Guadeloupe", "Saint-Barthélemy",
+                           "Collectivity of Saint Martin", "Martinique", "Wallis and Futuna"))
+
+# 2. Filter benthos time-range ----
+
+data_benthos_range_i <- data_benthos_range %>% 
+  filter(SOVEREIGN1 == "France")
+
+# 3. Map for specific cases ----
+
+# 3.1 Wallis and Futuna --
+
+data_eez_i <- data_eez_sovereign %>% 
+  filter(TERRITORY1 == "Wallis and Futuna")
+
+plot_wafu <- ggplot() +
+  # EEZ
+  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b) +
+  # Background map
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  # Benthos
+  geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
+  coord_sf(xlim = c(-180, -174), ylim = c(-16, -10)) +
   scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank())
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-usa_global.png"))
-# 2. Make the individual maps
-# 2.1. French Antillas
-data_boundary_i <- data_boundary %>% 
-    filter(sub_country == "caribbean")
-  
-plot_i <- ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez_us, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution,
-             color = "azure3", size = rel(0.2), alpha = 0.5,
-             show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_benthos_us, aes(col =  interval_class)) +
-  # Define boundaries
-  coord_sf(xlim = c(data_boundary_i$lon_min, data_boundary_i$lon_max), 
-           ylim = c(data_boundary_i$lat_min, data_boundary_i$lat_max), expand = FALSE) +
-  # Aesthetics
-  guides(colour = guide_legend(override.aes = list(size = 4))) +
-  scale_color_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
-  theme(axis.title = element_blank()) +
-  theme(legend.position = "none") +
-  ggtitle("Caribbean")
-  
-ggsave(plot_i, filename = paste0("../figs/01_individual-map-for-usa_caribbean.png"))
-#rm(data_eez_us, data_benthos_us)
+  theme(panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
+  labs(title = "Wallis and Futuna")
+
+# 3.2 Bassas da India AND Europa Island --
+
+data_eez_i <- data_eez_sovereign %>% 
+  filter(TERRITORY1 %in% c("Bassas da India", "Europa Island"))
+
+plot_baeu <- ggplot() +
+  # EEZ
+  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b) +
+  # Background map
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  # Benthos
+  geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
+  coord_sf(xlim = c(37, 42), ylim = c(-26, -19)) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  theme(panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
+  labs(title = "Bassas da India and Europa")
+
+# 4. Make and assemble plots ----
+
+plot_fr <- ggarrange(ggarrange(ggplot_map_eez(territory_name = "Collectivity of Saint Martin", title = TRUE),
+                               ggplot_map_eez(territory_name = "Saint-Barthélemy", title = TRUE), 
+                               ggplot_map_eez(territory_name = "Martinique", title = TRUE),
+                               ggplot_map_eez(territory_name = "Guadeloupe", title = TRUE), ncol = 4),
+                     ggplot_map_global(), 
+                     ggarrange(plot_wafu,
+                               ggplot_map_eez(territory_name = "French Polynesia", title = TRUE),
+                               ggplot_map_eez(territory_name = "Clipperton Island", title = TRUE),
+                               ggplot_map_eez(territory_name = "New Caledonia", title = TRUE), ncol = 4), 
+                     ggarrange(ggplot_map_eez(territory_name = "Mayotte", title = TRUE),
+                               ggplot_map_eez(territory_name = "Juan de Nova Island", title = TRUE),
+                               ggplot_map_eez(territory_name = "Réunion", title = TRUE),
+                               plot_baeu,
+                               ggplot_map_eez(territory_name = "Ile Tromelin", title = TRUE), ncol = 5),
+                     nrow = 4, heights = c(1, 2, 1, 1))
+
+# 5. Save the plot ----
+
+ggsave(plot_fr, file = "../figs/01_individual-map-by-country_france.png", width = 10, height = 12)
+
 ```
 
-# 3.3.3 UK
+### 3.3.2 United States
 
-```{r}
+```{r fig.width=9, fig.height=12}
+
+# 1. Filter territories -----
+
+data_eez_sovereign <- data_eez %>% 
+  filter(TERRITORY1 %in% c("American Samoa", "Palmyra Atoll", "Puerto Rico", "United States Virgin Islands",
+                           "Johnston Atoll", "Guam", "Northern Mariana Islands", "Wake Island", "Jarvis Island",
+                           "Howland and Baker islands", "United States", "Hawaii")) %>% 
+  filter(POL_TYPE == "200NM") %>% 
+  mutate(TERRITORY1 = case_when(ISO_TER1 == "USA" ~ "South Coast of US",
+                                TRUE ~ TERRITORY1))
+
+# 2. Filter benthos time-range ----
+
+data_benthos_range_i <- data_benthos_range %>% 
+  filter(SOVEREIGN1 == "United States")
+
+# 3. Map for specific cases ----
+
+# 3.1 Puerto Rico and USVI --
+
+data_eez_i <- data_eez_sovereign %>% 
+  filter(TERRITORY1 %in% c("Puerto Rico", "United States Virgin Islands"))
+
+plot_usvi <- ggplot() +
+  # EEZ
+  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b) +
+  # Background map
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  # Benthos
+  geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
+  coord_sf(xlim = c(-68.5, -63.5), ylim = c(14.5, 22)) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  theme(panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
+  labs(title = "Puerto Rico and USVI")
+
+# 3.2 South US coast --
+
+data_eez_i <- data_eez_sovereign %>% 
+  filter(TERRITORY1 == "United States")
+
+plot_sous <- ggplot() +
+  # EEZ
+  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b) +
+  # Background map
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  # Benthos
+  geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
+  coord_sf(xlim = c(-94, -79), ylim = c(23.5, 31)) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  theme(panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
+  labs(title = "South Coast of US")
+
+# 3.3 Hawaii --
+
+data_eez_i <- data_eez_sovereign %>% 
+  filter(TERRITORY1 == "Hawaii")
+
+plot_hawa <- ggplot() +
+  # EEZ
+  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b) +
+  # Background map
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  # Benthos
+  geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
+  coord_sf(xlim = c(-180, -150), ylim = c(16.5, 35)) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  theme(panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
+  labs(title = "Hawaii")
+
+# 3.4 Guam and Northern Mariana Islands --
+
+data_eez_i <- data_eez_sovereign %>% 
+  filter(TERRITORY1 %in% c("Guam", "Northern Mariana Islands"))
+
+plot_guam <- ggplot() +
+  # EEZ
+  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b) +
+  # Background map
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  # Benthos
+  geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
+  coord_sf(xlim = c(141, 150), ylim = c(10, 25)) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  theme(panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
+  labs(title = "Guam and Mariana Islands")
+
+# 4. Make and assemble plots ----
+
+plot_us <- ggarrange(ggarrange(plot_hawa,
+                               ggplot_map_eez(territory_name = "Palmyra Atoll", title = TRUE),
+                               plot_sous,
+                               plot_usvi,
+                               ncol = 4),
+                     ggplot_map_global(), 
+                     ggarrange(ggplot_map_eez(territory_name = "Johnston Atoll", title = TRUE),
+                               ggplot_map_eez(territory_name = "American Samoa", title = TRUE),
+                               ggplot_map_eez(territory_name = "Jarvis Island", title = TRUE), ncol = 3),
+                     ggarrange(ggplot_map_eez(territory_name = "Howland and Baker islands", title = TRUE),
+                               plot_guam,
+                               ggplot_map_eez(territory_name = "Wake Island", title = TRUE), ncol = 3),
+                     nrow = 4, heights = c(1, 2, 1, 1))
+
+# 5. Save the plot ----
+
+ggsave(plot_us, file = "../figs/01_individual-map-by-country_united-states.png", width = 10, height = 12)
+
+```
+
+### 3.3.3 United Kingdom
+
+```{r fig.width=9, fig.height=1}
+
+# 1. Filter territories -----
+
+data_eez_sovereign <- data_eez %>% 
+  filter(TERRITORY1 %in% c("Pitcairn", "Anguilla", "British Virgin Islands",
+                           "Cayman Islands", "Montserrat", "Turks and Caicos Islands",
+                           "Bermuda"))
+
+# 2. Filter benthos time-range ----
+
+data_benthos_range_i <- data_benthos_range %>% 
+  filter(SOVEREIGN1 == "United Kingdom")
+
+# 3. Make and assemble plots ----
+
+plot_uk <- ggarrange(ggarrange(ggplot_map_eez(territory_name = "Turks and Caicos Islands", title = TRUE),
+                    ggplot_map_eez(territory_name = "Cayman Islands", title = TRUE), 
+                    ggplot_map_eez(territory_name = "Bermuda", title = TRUE), ncol = 3),
+          ggplot_map_global(), 
+          ggarrange(ggplot_map_eez(territory_name = "Pitcairn", title = TRUE),
+                    ggplot_map_eez(territory_name = "Montserrat", title = TRUE),
+                    ggplot_map_eez(territory_name = "Anguilla", title = TRUE),
+                    ggplot_map_eez(territory_name = "British Virgin Islands", title = TRUE), ncol = 4), 
+          nrow = 3, heights = c(1, 2, 1))
+
+# 4. Save the plot ----
+
+ggsave(plot_uk, file = "../figs/01_individual-map-by-country_united-kingdom.png", width = 10, height = 8)
+
 ```
 
 # Reproducibility
 
 ```{r reprod}
+
 # 1. Reproducibility ----
+
 sessionInfo()
+
 ```
 
 ---
