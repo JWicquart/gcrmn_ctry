@@ -307,6 +307,7 @@ data_benthos_range_fiji <- data_benthos_range %>%
          #plot the longest time series on top of the others
          intervall_class = factor(interval_class, levels = c("1", "2-5", "6-10", "11-20", ">20"))) %>% 
   arrange(interval_class)
+
 # 2. Make the plot ----
 ggplot() +
   geom_polygon(data = data_eez_fiji, aes(x = long, y = lat, group = group), fill = col_eez, alpha = 0.8) +
