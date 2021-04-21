@@ -23,7 +23,101 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 
 ```{r base}
 
+# 1. Required packages ----
 
+library(tidyverse) # Core tidyverse packages
+library(rfishbase) # To access fishbase databases
+library(readxl) # To read excel files
+library(formattable) # For interactive html tables
+library(DT) # For interactive html tables
+
+```
+
+# Analyses
+
+```{r}
+
+# 1. Extract list of reef-associated fish species ----
+
+reef_fishes <- species() %>% 
+  filter(DemersPelag == "reef-associated") %>% 
+  select(Species) %>% 
+  pull()
+
+# 2. Extract list of country based on species list ----
+
+country_fishes <- country(species_list = reef_fishes) %>% 
+  select(Species, Status, CurrentPresence, country)
+
+# 3. Format the country names and extract the top 30 ----
+
+country_fishes <- country_fishes %>% 
+  rename(subcountry = country) %>% 
+  mutate(country = case_when(subcountry %in% c("Mayotte", "R<e9>union", "Tahiti", 
+                                               "Martinique", "Marquesas Is.", "Guadeloupe",
+                                               "French Polynesia", "Europa I.", "Tuamotu Is.",
+                                               "Wallis Futuna", "St Martin (FR)",
+                                               "New Caledonia", "Juan de Nova I.", 
+                                               "Glorieuses Is.", "Clipperton I.", "France") ~ "France",
+                             subcountry %in% c("Virgin Is. (UK)", "Montserrat", "Pitcairn",
+                                               "Turks Caicos Is.", "Anguilla", "Bermuda",
+                                               "Cayman Is.", "UK") ~ "United Kingdom",
+                             subcountry %in% c("American Samoa", "Virgin Is. (US)", "Guam",
+                                               "Hawaii", "Johnston I.", "North Marianas", "USA",
+                                               "US Misc Pac", "Wake I.") ~ "United States",
+                             subcountry %in% c("Japan", "Ogasawara Is.", "Ryukyu Is.") ~ "Japan",
+                             TRUE ~ subcountry)) %>% 
+  filter(country %in% c("Australia", "Indonesia", "Philippines", 
+                        "Papua New Guinea", "Fiji", "Solomon Is.", "Saudi Arabia",
+                        "Maldives", "Cuba", "Micronesia", "Bahamas", "Madagascar",
+                        "Marshall Is.", "India", "Malaysia", "Egypt", "Kiribati",
+                        "Tanzania", "Mozambique", "Sudan", "Eritrea", "Seychelles",
+                        "Belize", "Vanuatu", "Tonga", "Mexico", "France", "Japan", 
+                        "United States", "United Kingdom"))
+
+# 4. Summarize the data ----
+
+# 4.1 Number of species --
+
+fishes_presence <- country_fishes %>% 
+  # Extract species with possible ou validated presence
+  filter(CurrentPresence %in% c("present", "Present", "possible")) %>% 
+  # Remove duplicates
+  select(Species, country) %>% 
+  distinct() %>% 
+  # Count the number of species by country
+  group_by(country) %>% 
+  summarise(n_species = n())
+
+# 4.2 Number of endemic species --
+
+fishes_endemic <- country_fishes %>% 
+  # Extract species with possible ou validated presence
+  filter(CurrentPresence %in% c("present", "Present", "possible")) %>% 
+  # Extract endemic species
+  filter(Status == "endemic") %>% 
+  # Remove duplicates
+  select(Species, country) %>% 
+  distinct() %>% 
+  # Count the number of species by country
+  group_by(country) %>% 
+  summarise(n_endemic = n())
+
+# 4.3 Join and format country names --
+
+data_fishes <- left_join(fishes_presence, fishes_endemic) %>% 
+  rename(SOVEREIGN1 = country) %>% 
+  left_join(read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1, range = "A1:B31"), .)
+
+# 4.4 Make the table --
+
+data_fishes %>% 
+  formattable(.) %>% 
+  as.datatable(., rownames = FALSE, colnames = c("N°", "Country", "n species", "n endemic"))
+
+# 4.5 Export the results --
+
+write.csv2(data_fishes, "./../figs/04_table_number-fish-species-by-country.csv")
 
 ```
 
