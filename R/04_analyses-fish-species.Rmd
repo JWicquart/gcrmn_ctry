@@ -73,7 +73,8 @@ country_fishes <- country_fishes %>%
                         "Marshall Is.", "India", "Malaysia", "Egypt", "Kiribati",
                         "Tanzania", "Mozambique", "Sudan", "Eritrea", "Seychelles",
                         "Belize", "Vanuatu", "Tonga", "Mexico", "France", "Japan", 
-                        "United States", "United Kingdom"))
+                        "United States", "United Kingdom")) %>% 
+  mutate(country = str_replace_all(country, "Is.", "Islands"))
 
 # 4. Summarize the data ----
 
@@ -117,7 +118,7 @@ data_fishes %>%
 
 # 4.5 Export the results --
 
-write.csv2(data_fishes, "./../figs/04_table_number-fish-species-by-country.csv")
+write.csv2(data_fishes, "./../figs/04_table_number-fish-species-by-country.csv", row.names = FALSE)
 
 ```
 
