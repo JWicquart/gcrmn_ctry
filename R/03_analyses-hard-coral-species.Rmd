@@ -92,9 +92,9 @@ data_corals_country %>%
   formattable(.) %>% 
   as.datatable(., rownames = FALSE, colnames = c("Country", "Number of hard coral species"))
 
-# 4. Export fule
+# 4. Export the results ----
 
-write_csv2(data_corals_country, "../figs/nb-coral-species-by-country.csv")
+write_csv2(data_corals_country, "../figs/04_table-number-hard-coral-species-by-country.csv")
 
 ```
 
