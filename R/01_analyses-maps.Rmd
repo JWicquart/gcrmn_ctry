@@ -34,6 +34,7 @@ windowsFonts("ArialMT" = windowsFont("ArialMT"))
 
 # 2. Required packages ----
 
+library(magrittr) # To use special pipes
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
