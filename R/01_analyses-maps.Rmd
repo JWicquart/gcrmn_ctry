@@ -215,11 +215,15 @@ data_eez_i <- data_eez %>%
   st_transform(., crs = 3460) %>% 
   st_union(.)
 
+data_eez_i %<>% # Special pipe from magittr
+  st_buffer(10) # To join polygon (remove vertical line)
+
 # 1.2 Background map --
 
 background_map_i <- background_map %>% 
   st_transform(., crs = 3460) %>% 
-  st_crop(st_bbox(data_eez_i))
+  st_crop(st_bbox(data_eez_i)) %>% 
+  filter(scalerank != 100) # To remove vertical line
   
 # 1.3 Data benthos --
 
