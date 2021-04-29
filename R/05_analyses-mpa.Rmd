@@ -20,6 +20,9 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 ```
 
 # Import functions, packages and data
+- MPA zones implemented in the 30 countries studied
+- Data filtration : * Were retained only protected areas fitting the "is MAP" definition (as defined by MPAtlas) 
+* Are taken into account only MPA zones that are considered implemented (as defined by MPAtlas)
 
 ```{r base}
 
@@ -45,6 +48,7 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
   # Homogenize countries names
   rename(SOVEREIGN1 = sovereign) %>% 
   filter(is_mpa == 1) %>% 
+  filter(implemente == 1) %>% 
   mutate(SOVEREIGN1 = str_replace_all(SOVEREIGN1, 
                                       c("AUS" = "Australia",
                                         "BHS" = "Bahamas", 
@@ -76,6 +80,8 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
                                         "TZA" = "Tanzania",
                                         "USA" = "United States",
                                         "VUT" = "Vanuatu")))
+
+
 
 # 3.2 Coral distribution - CRS in meters
 
@@ -143,7 +149,7 @@ for (i in unique(data_mpa$SOVEREIGN1)) {
 # 2. Clean table with all MPA related infos
 
 mpa_table <- as.data.frame(mpa_area, row.names = T) %>% 
-  pivot_longer(., "Australia":"Eritrea", names_to = "SOVEREIGN1", values_to = "mpa_area_km2") %>% 
+  pivot_longer(., "Australia":"Vanuatu", names_to = "SOVEREIGN1", values_to = "mpa_area_km2") %>% 
   arrange(SOVEREIGN1) %>% 
   left_join(mpa_w_reef, .)
 

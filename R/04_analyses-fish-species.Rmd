@@ -118,7 +118,7 @@ data_fishes %>%
 
 # 4.5 Export the results --
 
-write.csv2(data_fishes, "./../figs/04_table-number-fish-species-by-country.csv", row.names = FALSE)
+write.csv2(data_fishes, "./../figs/04_table_number-fish-species-by-country.csv", row.names = FALSE)
 
 ```
 
