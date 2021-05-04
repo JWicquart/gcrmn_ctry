@@ -20,106 +20,157 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 ```
 
 # Import functions, packages and data
+- MPA zones implemented in the 30 countries studied
+- Data filtration : * Were retained only protected areas fitting the "is MAP" definition (as defined by MPAtlas) 
+* Are taken into account only MPA zones that are considered implemented (as defined by MPAtlas)
 
 ```{r base}
 
+source("functions/graphical_par.R")
+source("functions/theme_map.R")
 
 
-```
+# 2. Required packages ----
 
-```{r}
+library(tidyverse) # Core tidyverse packages
+library(extrafont) # Font use
+library(readxl) # To read excel files
+library(sf) # To plot maps
 
-## MPAs from MPAtlas ----
-data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") 
-# Extract MPAs for the 30 countries ----
-data_mpa_top30 <- data_mpa %>% 
+# 3. Load data ----
+# 3.1. MPAs from MPAtlas
+
+data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") %>% 
+  # Select top 30
   filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
                           "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
                           "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
+  # Homogenize countries names
+  rename(SOVEREIGN1 = sovereign) %>% 
   filter(is_mpa == 1) %>% 
-  group_by(sovereign) %>% 
-  mutate(surf_mpa = st_area(geometry)) %>% 
+  filter(implemente == 1) %>% 
+  mutate(SOVEREIGN1 = str_replace_all(SOVEREIGN1, 
+                                      c("AUS" = "Australia",
+                                        "BHS" = "Bahamas", 
+                                        "BLZ" = "Belize",
+                                        "CUB" = "Cuba", 
+                                        "EGY" = "Egypt", 
+                                        "ERI" = "Eritrea", 
+                                        "FJI" = "Fiji", 
+                                        "FRA" = "France", 
+                                        "FSM" = "Micronesia",
+                                        "GBR" = "United Kingdom",
+                                        "IDN" = "Indonesia", 
+                                        "IND" = "India", 
+                                        "JPN" = "Japan", 
+                                        "KIR" = "Kiribati",
+                                        "MDG" = "Madagascar", 
+                                        "MDV" = "Maldives", 
+                                        "MEX" = "Mexico",
+                                        "MHL" = "Marshall Islands",
+                                        "MOZ" = "Mozambique", 
+                                        "MYS" = "Malaysia",
+                                        "PHL" = "Philippines", 
+                                        "PNG" = "Papua New Guinea",
+                                        "SAU" = "Saudi Arabia",
+                                        "SDN" = "Sudan", 
+                                        "SLB" = "Solomon Islands",
+                                        "SYC" = "Seychelles",
+                                        "TON" = "Tonga",
+                                        "TZA" = "Tanzania",
+                                        "USA" = "United States",
+                                        "VUT" = "Vanuatu")))
+
+
+
+# 3.2 Coral distribution - CRS in meters
+
+coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") %>% 
+  st_as_sf(., coords = c("long", "lat"), crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+```
+
+# Nb MPA zones with coral reefs
+
+```{r}
+
+# 1. Number of MPA zones  ----
+
+data_mpa_top30 <- data_mpa %>% 
+  group_by(SOVEREIGN1) %>% 
   st_drop_geometry() %>% 
-  summarise(nb_mpa = n(),
-            surface_mpa = sum(surf_mpa)) %>% 
+  summarise(nb_mpa = n()) %>% 
   ungroup()
-# Converts the surface in km²
-units(data_mpa_top30$surface_mpa) <- "km^2"
-## Extract all the MPAs that contain coral reefs for the top 30 ----
+
+
+
+# 2. Extract all the MPA zones that contain coral reefs for the top 30 ----
 # Does not take into account the protection level
+
 mpa_w_reef <- data_mpa %>% 
-  #filter(sovereign %in% c("CUB")) %>% 
-  filter(is_mpa == 1) %>% 
   #spatial join btw coral distrib and the location of the MPAs
   st_join(coral_distribution, .,  left = FALSE) %>% 
   st_drop_geometry() %>% 
   #retain only one line per MPA
   distinct(mpa_id, .keep_all = T) %>% 
-  group_by(sovereign) %>% 
+  group_by(SOVEREIGN1) %>% 
   summarise(nb_mpa_w_cr = n()) %>% 
   ungroup() %>% 
-  arrange(sovereign) %>% 
+  arrange(SOVEREIGN1) %>% 
   left_join(data_mpa_top30, .)
-## Save table mpa
-write_csv2(mpa_w_reef, "../figs/02_mpa-with-reef.csv")
-mpa_hp_reef <- data_mpa %>% 
-  filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
-                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
-  st_join(coral_distribution, .,  left = FALSE) %>% 
-  st_drop_geometry() %>% 
-  #retain only one line per MPA
-  distinct(mpa_id, .keep_all = T) %>% 
-  filter(is_mpa == 1) %>% 
-  filter(no_take %in% c("All", "Part")) %>% 
-  group_by(sovereign) %>% 
-  summarise(nb_hp_zone = n()) %>% 
-  ungroup() %>% 
-  arrange(sovereign)
-  
-### Nb of HP MPA zones encompassing coral reefs - unfinished
-hp_reefs <- data_mpa %>% 
-    filter(sovereign %in% c("AUS", "IDN", "PHL", "FRA", "PNG", "USA", "FJI", "SLB", "SAU", "MDV",
-                          "CUB", "FSM", "BHS", "MDG", "MHL", "IND", "MYS", "EGY", "KIR", "TZA",
-                          "MOZ", "SDN", "ERI", "JPN", "SYC", "BLZ", "GBR", "VUT", "TON", "MEX")) %>% 
-  st_join(coral_distribution, .,  left = FALSE) %>% 
-  st_drop_geometry() %>% 
-  distinct(mpa_id, .keep_all = T) %>% 
-  filter(is_mpa == 1) %>% 
-  distinct(mpa_id, no_take, .keep_all = T) %>%
-  group_by(sovereign, no_take) %>%
-  mutate(nb = n()) %>% 
-  arrange(sovereign)
-temp <- data_mpa %>% 
-  st_join(coral_distribution, .,  left = FALSE) %>% 
-  filter(sovereign %in% c("AUS")) %>% 
-  st_drop_geometry() %>% 
-  distinct(mpa_id, no_take, .keep_all=T) %>% 
-  arrange(mpa_id)
-## Plot ----  
-ggplot() +
-  # Adding the EEZ
-  geom_sf(data = data_eez, fill = col_eez, color = col_eez_b, alpha = 0.8) +
-  # Adding territories
-  geom_sf(data = land_major, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_minor, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = coral_distribution, 
-          color = "azure3", 
-          size = rel(0.2), 
-          alpha = 0.5,
-          show.legend = FALSE) +
-  geom_sf(data = land_atolls, fill = col_fill_map, col = col_color_map) +
-  geom_sf(data = land_boundary, fill = col_fill_map, col = col_color_map) +
-  # Adding the location sites
-  geom_sf(data = data_mpa) +
-  # Aesthetics
-  theme(axis.title = element_blank())
-# 5.8. MPAs from The protected planet database
-info_mpa <- read.csv("./../data/02_mpa/WDPA_WDOECM_marine_csv/WDPA_WDOECM_marine_csv.csv")
-data_mpa0 <- read_sf("./../data/WDPA_WDOECM_wdpa_shp0/WDPA_WDOECM_wdpa_shp-polygons.shp") %>% 
-  filter(MARINE != 0)
+
+
 
 ```
+
+# Surface MPA
+
+```{r}
+
+# 1. Calculate MPA area
+
+mpa_area <- list()
+
+for (i in unique(data_mpa$SOVEREIGN1)) {
+  
+  data_mpa_i <- data_mpa %>% 
+    filter(SOVEREIGN1 == i) 
+  
+  mpa_comb_i <- st_union(st_combine(data_mpa_i), by_feature = T)
+   
+  mpa_area_i <- st_area(mpa_comb_i) 
+  
+  units(mpa_area_i) <- "km^2"
+  
+  mpa_area[[i]] = mpa_area_i
+  
+}
+
+
+
+# 2. Clean table with all MPA related information
+
+mpa_table <- as.data.frame(mpa_area, row.names = T) %>% 
+  
+  pivot_longer(., "Australia":"Vanuatu", names_to = "SOVEREIGN1", values_to = "mpa_area_km2") %>% 
+  mutate(SOVEREIGN1 = str_replace_all(SOVEREIGN1, 
+                                      c("Marshall.Islands" = "Marshall Islands",
+                                        "Papua.New.Guinea" = "Papua New Guinea",
+                                        "Saudia.Arabia" = "Saudi Arabia",
+                                        "Solomon.Islands" = "Solomon Islands",
+                                        "United.Kingdom" = "United Kingdom",
+                                        "United.States" = "United States"))) %>% 
+  arrange(SOVEREIGN1) %>% 
+  left_join(mpa_w_reef, .)
+
+
+# 3. Save table 
+
+write_csv2(mpa_table, "../figs/02_mpa-with-reef.csv")
+
+```
+
+
 
 # Reproducibility
 

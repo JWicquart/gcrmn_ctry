@@ -1,5 +1,5 @@
 ---
-title: "Analyses - Graphs"
+title: "Analyses - Maps"
 author : "Nina Prasil & Jeremy Wicquart"
 date: "`r Sys.Date()`"
 output: 
@@ -34,7 +34,7 @@ library(tidyverse) # Core tidyverse packages
 library(sf) # To plot maps
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
-library(ggpubr) # To assemble plots
+#library(ggpubr) # To assemble plots
 
 # 3. Set default ggplot theme ----
 
@@ -120,7 +120,7 @@ nb_obs <- data_benthos %>%
 # 3. left join ----
 
 left_join(nb_sites, nb_obs) %>% 
-  write_csv2(., "../figs/04_table_monitoring-effort-by-country.csv")
+  write_csv2(., "../figs/04_table-monitoring-effort-by-country.csv")
 
 ```
 
