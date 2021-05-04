@@ -58,7 +58,7 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
                                         "ERI" = "Eritrea", 
                                         "FJI" = "Fiji", 
                                         "FRA" = "France", 
-                                        "FSM" = "Federated States of Micronesia",
+                                        "FSM" = "Micronesia",
                                         "GBR" = "United Kingdom",
                                         "IDN" = "Indonesia", 
                                         "IND" = "India", 
@@ -72,7 +72,7 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
                                         "MYS" = "Malaysia",
                                         "PHL" = "Philippines", 
                                         "PNG" = "Papua New Guinea",
-                                        "SAU" = "Saudia Arabia",
+                                        "SAU" = "Saudi Arabia",
                                         "SDN" = "Sudan", 
                                         "SLB" = "Solomon Islands",
                                         "SYC" = "Seychelles",
@@ -146,10 +146,20 @@ for (i in unique(data_mpa$SOVEREIGN1)) {
   
 }
 
-# 2. Clean table with all MPA related infos
+
+
+# 2. Clean table with all MPA related information
 
 mpa_table <- as.data.frame(mpa_area, row.names = T) %>% 
+  
   pivot_longer(., "Australia":"Vanuatu", names_to = "SOVEREIGN1", values_to = "mpa_area_km2") %>% 
+  mutate(SOVEREIGN1 = str_replace_all(SOVEREIGN1, 
+                                      c("Marshall.Islands" = "Marshall Islands",
+                                        "Papua.New.Guinea" = "Papua New Guinea",
+                                        "Saudia.Arabia" = "Saudi Arabia",
+                                        "Solomon.Islands" = "Solomon Islands",
+                                        "United.Kingdom" = "United Kingdom",
+                                        "United.States" = "United States"))) %>% 
   arrange(SOVEREIGN1) %>% 
   left_join(mpa_w_reef, .)
 
