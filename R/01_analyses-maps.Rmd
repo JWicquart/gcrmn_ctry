@@ -60,7 +60,10 @@ load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
 # 4.3 EEZ data --
 
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
-  filter(SOVEREIGN1 %in% unique(data_benthos$SOVEREIGN1)) # Extract top 30 countries
+  # Change SOVEREIGN1 for Gloriosos islands from Madagascar to France
+  mutate(SOVEREIGN1 = ifelse(TERRITORY1 == "Glorioso Islands", "France", SOVEREIGN1)) %>% 
+  # Extract top 30 countries
+  filter(SOVEREIGN1 %in% unique(data_benthos$SOVEREIGN1))
 
 # 4.4 Background maps --
 

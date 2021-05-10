@@ -49,7 +49,9 @@ crs_used <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 
 # 4.2 EEZ data --
 
-data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
+  # Change SOVEREIGN1 for Gloriosos islands from Madagascar to France
+  mutate(SOVEREIGN1 = ifelse(TERRITORY1 == "Glorioso Islands", "France", SOVEREIGN1))
 
 ```
 

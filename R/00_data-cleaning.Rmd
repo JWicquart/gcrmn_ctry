@@ -79,6 +79,11 @@ rm(reefs.eez)
 
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
 
+# 2. Change SOVEREIGN1 for Gloriosos islands from Madagascar to France ----
+
+data_eez <- data_eez %>% 
+  mutate(SOVEREIGN1 = ifelse(TERRITORY1 == "Glorioso Islands", "France", SOVEREIGN1))
+
 ```
 
 # 3. Defining top 30
