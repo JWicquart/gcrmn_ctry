@@ -348,7 +348,7 @@ ggsave(plot_i, filename = "../figs/02_individual-map-by-country_kiribati.png", h
 data_eez_sovereign <- data_eez %>% 
   filter(TERRITORY1 %in% c("French Polynesia", "Mayotte", "Ile Tromelin", "New Caledonia", 
                            "Réunion", "Europa Island", "Juan de Nova Island", "Bassas da India", 
-                           "Clipperton Island", "Guadeloupe", "Saint-Barthélemy",
+                           "Clipperton Island", "Guadeloupe", "Saint-Barthélemy", "Glorioso Islands",
                            "Collectivity of Saint Martin", "Martinique", "Wallis and Futuna"))
 
 # 2. Filter benthos time-range ----
@@ -393,7 +393,8 @@ plot_baeu <- ggplot() +
   geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
   # Benthos
   geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
-  coord_sf(xlim = c(37, 42), ylim = c(-26, -19)) +
+  coord_sf(xlim = c(st_bbox(data_eez_i)$xmin, st_bbox(data_eez_i)$xmax), 
+           ylim = c(st_bbox(data_eez_i)$ymin, st_bbox(data_eez_i)$ymax)) +  
   scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
   theme(panel.background = element_blank(),
         panel.border = element_blank(),
@@ -404,12 +405,36 @@ plot_baeu <- ggplot() +
         plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
   labs(title = "Bassas da India and Europa")
 
+# 3.3 Guadeloupe AND Martinique --
+
+data_eez_i <- data_eez_sovereign %>% 
+  filter(TERRITORY1 %in% c("Guadeloupe", "Martinique"))
+
+plot_magu <- ggplot() +
+  # EEZ
+  geom_sf(data = data_eez_i, fill = col_eez, color = col_eez_b) +
+  # Background map
+  geom_sf(data = background_map, fill = col_fill_map, col = col_color_map) +
+  # Benthos
+  geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 3, show.legend = FALSE) +
+  coord_sf(xlim = c(st_bbox(data_eez_i)$xmin, st_bbox(data_eez_i)$xmax), 
+           ylim = c(st_bbox(data_eez_i)$ymin, st_bbox(data_eez_i)$ymax)) +
+  scale_fill_manual(values = palette_trange, name = "Time range (years)", drop = FALSE) +
+  theme(panel.background = element_blank(),
+        panel.border = element_blank(),
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(hjust = 0.5, size = 10),
+        plot.margin = unit(c(0.1,0.1,0.1,0.1), "cm")) +
+  labs(title = "Guadeloupe and Martinique")
+
 # 4. Make and assemble plots ----
 
 plot_fr <- ggarrange(ggarrange(ggplot_map_eez(territory_name = "Collectivity of Saint Martin", title = TRUE),
                                ggplot_map_eez(territory_name = "Saint-Barthélemy", title = TRUE), 
-                               ggplot_map_eez(territory_name = "Martinique", title = TRUE),
-                               ggplot_map_eez(territory_name = "Guadeloupe", title = TRUE), ncol = 4),
+                               plot_magu,
+                               ggplot_map_eez(territory_name = "Glorioso Islands", title = TRUE), ncol = 4),
                      ggplot_map_global(), 
                      ggarrange(plot_wafu,
                                ggplot_map_eez(territory_name = "French Polynesia", title = TRUE),
