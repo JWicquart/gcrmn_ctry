@@ -92,6 +92,10 @@ data_reefs %>%
   formattable(.) %>% 
   as.datatable(., rownames = FALSE, colnames = c("N°", "Country", "Area (km²)", "Relative (%)"))
 
+# 5. Export the table ----
+
+write_csv2(data_reefs, "../figs/04_table-reef-surface-by-country.csv")
+
 ```
 
 # Number of sites
