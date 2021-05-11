@@ -331,6 +331,13 @@ for (i in unique(data_method$SOVEREIGN1)) {
   
 }
 
+# 3. Save the table ----
+
+data_method %>% 
+  select(-Rel) %>% 
+  pivot_wider(names_from = "Method", values_from = "Abs") %>% 
+  write_csv2(., "../figs/04_table-method-used-by-time-range-and-country.csv")
+
 ```
 
 # Taxonomic precision by time-range
