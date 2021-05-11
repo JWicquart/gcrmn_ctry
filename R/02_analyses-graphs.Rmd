@@ -117,7 +117,7 @@ nb_obs <- data_benthos %>%
   select(-tot) %>% 
   arrange(SOVEREIGN1)
 
-# 3. left join ----
+# 3. Export the table ----
 
 left_join(nb_sites, nb_obs) %>% 
   write_csv2(., "../figs/04_table-monitoring-effort-by-country.csv")
@@ -331,7 +331,7 @@ for (i in unique(data_method$SOVEREIGN1)) {
   
 }
 
-# 3. Save the table ----
+# 3. Export the table ----
 
 data_method %>% 
   select(-Rel) %>% 
@@ -397,6 +397,14 @@ for (i in unique(precision_taxo$SOVEREIGN1)) {
   
 }
 
+# 3. Export the table ----
+
+precision_taxo %>% 
+  select(-Abs) %>% 
+  pivot_wider(names_from = "Tax_lvl", values_from = "Rel") %>% 
+  select(SOVEREIGN1, Time_range, Group, Subgroup, Family, Genus, Species) %>% 
+  write_csv2(., "../figs/04_table-relative-taxonomic-precision-global.csv")
+
 ```
 
 # Taxonomic precision algae
@@ -453,6 +461,13 @@ for (i in unique(taxo_algae$SOVEREIGN1)) {
   plot_precision_algae[[i]] <- plot_i # add each plot into plot list
   
 }
+
+# 3. Export the table ----
+
+taxo_algae %>% 
+  select(-n_row, -total) %>% 
+  pivot_wider(names_from = "Group", values_from = "row_rel") %>% 
+  write_csv2(., "../figs/04_table-relative-taxonomic-precision-algae.csv")
 
 ```
 
@@ -511,6 +526,13 @@ for (i in unique(taxo_othfau$SOVEREIGN1)) {
   plot_precision_othfau[[i]] <- plot_i # add each plot into plot list
   
 }
+
+# 3. Export the table ----
+
+taxo_othfau %>% 
+  select(-n_row, -total) %>% 
+  pivot_wider(names_from = "Group", values_from = "row_rel") %>% 
+  write_csv2(., "../figs/04_table-relative-taxonomic-precision-other-fauna.csv")
 
 ```
 
