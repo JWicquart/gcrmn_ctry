@@ -1,0 +1,332 @@
+\documentclass[a4paper,12pt,twoside]{book}
+
+%%%%% PACKAGES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{anyfontsize}
+\usepackage[latin9]{inputenc}
+\usepackage[english]{babel}
+%\usepackage[a4paper,top=3cm,bottom=2cm,left=2.5cm,right=4cm,asymmetric]{geometry}
+\usepackage[a4paper,top=3cm,bottom=3cm,left=2.5cm,right=2.5cm,bindingoffset=2cm,heightrounded]{geometry}
+\usepackage{afterpage}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage[colorlinks=true,linkcolor=color2,urlcolor=color2,citecolor=color2,anchorcolor=color2]{hyperref}
+\usepackage{caption}
+\usepackage{tocbibind} % To include toc, lof, lot and bibliography in toc
+\usepackage{titlesec}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\usepackage{lipsum}
+
+\usepackage{changepage} % To change margins of one paragraph
+
+\usepackage{tcolorbox}
+
+
+\usepackage{tikz}
+
+%%%%% COULEURS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\definecolor{color1}{HTML}{2abb9b} % First page colour 1
+\definecolor{color2}{HTML}{446cb3} % First page colour 2
+\definecolor{color3}{HTML}{2e3131} % First page colour 3
+\definecolor{color4}{HTML}{f2f1ef} % First page colour 4
+
+%%%%% HEADER & FOOTER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pagestyle{fancy}
+\fancyhf{}
+
+\renewcommand\sectionmark[1]{\markboth{#1}{}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancyhead[RE,LO]{\sffamily\footnotesize \textcolor{color3}{\thepage}}
+\fancyhead[RO]{\sffamily\footnotesize \textcolor{color3}{Chapitre \nouppercase{\thechapter}}}
+\fancyhead[LE]{\sffamily\footnotesize \textcolor{color3}{\nouppercase{\leftmark}}}
+
+%%%%% CHAPTER STYLE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% https://borntocode.fr/latex-personnaliser-les-titres-chapter/
+
+% For chapter with numbering
+\titleformat{name=\chapter}[display] 
+{\fontsize{30pt}{12pt}\selectfont}
+{\textcolor{color2}	{\chaptertitlename\ \thechapter}}
+{18pt}
+{\Huge}
+
+% For chapter without numbering (ex : TOC)
+\titleformat{name=\chapter,numberless}[display] 
+{\fontsize{17pt}{12pt}\selectfont}
+{\textcolor{color2}}
+{18pt}
+{\Huge}
+
+%%%%% MISCELLANEOUS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Set path of figures
+\graphicspath{ {./../figs/} }
+
+% Set the font of the document
+\renewcommand\familydefault{\sfdefault}
+
+% Set Figure names
+\captionsetup[figure]{labelfont={color=color2}, name={\textsf{Figure}}, labelsep=period, justification=justified}
+
+% Set Table names
+\captionsetup[table]{labelfont={color=color2}, name={\textsf{Tableau}}, labelsep=period, justification=justified}
+
+\newtcbox{\mybox}[1][red]{on line,
+	arc=0pt,colback=color4,colframe=color4,
+	before upper={\rule[-3pt]{0pt}{10pt}},boxrule=0pt,
+	boxsep=0pt,left=6pt,right=6pt,top=2.5pt,bottom=0.5pt,coltext=color2}
+
+%%%%% DOCUMENT %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+	
+\sffamily
+
+\thispagestyle{empty}
+
+\newpage
+
+%%%%% INSIDE COVER PAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\thispagestyle{empty}
+
+\vspace*{1cm}
+
+\begin{flushleft}
+	
+École doctorale 472 - École Pratique des Hautes Études (EPHE)
+
+Spécialité \textit{Sciences de l'Environnement Marin}
+
+\vspace{1cm}
+
+Thèse pour l'obtention du grade de docteur en écologie
+
+\vspace{3cm}
+
+{\fontsize{30}{36} \bfseries \textcolor{color2}{Tendances temporelles et résilience des récifs coralliens}}
+
+\vspace{3cm}
+
+{\large \bfseries Jérémy Wicquart}
+
+\vspace{1cm}
+
+sous la direction de Serge Planes
+
+Directeur de recherche CNRS
+
+\vspace{2cm}
+
+Soutenue le XX octobre 2022
+
+Devant un jury composé de :
+
+\end{flushleft}
+
+\newpage
+
+%%%%% INSIDE COVER PAGE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\titlespacing*{\chapter}{0pt}{-50pt}{40pt} % To remove chapter head (space at the beginning of the page)
+
+\renewcommand{\contentsname}{Table des matières} % Rename TOC
+\tableofcontents
+\thispagestyle{empty}
+
+\titlespacing*{\chapter}{0pt}{50pt}{40pt} % To add chapter head (space at the beginning of the page)
+
+\newpage
+
+%%%%% CHAPTER 1 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction générale}
+
+\thispagestyle{empty}
+
+\vspace{5cm}
+
+\begin{flushleft}
+	{\large Résumé}
+	
+	\vspace{-0.3cm}
+	
+	\noindent\rule{6cm}{0.4pt}
+	
+	\vspace{0.5cm}
+	
+	\lipsum[1]
+\end{flushleft}
+
+\newpage
+
+\begin{minipage}{0.6\textwidth}\raggedright
+		
+	{\Huge \textcolor{color2}{FRANCE}}
+	
+	\vspace{0.2cm}
+	
+	\mybox{{\footnotesize 4\textsuperscript{th}}} Ranking based on reef area
+	
+	\vspace{0.1cm}
+	
+	\mybox{{\footnotesize 16,293 km\textsuperscript{2}}} Estimated reef area
+	
+	\vspace{0.1cm}
+		
+	\mybox{{\footnotesize 6.18\%}} Proportion of world coral reefs
+	
+\end{minipage}
+\begin{minipage}{0.4\textwidth}
+\includegraphics[width=\linewidth]{01_global-map-by-country_france.png}
+\end{minipage}
+
+\subsection{Introduction - General context}
+
+France owns the second largest Economic Exclusive Zone in the world. Its tropical overseas territories are present in the Atlantic, the Indian and the Pacific Ocean. Each tropical overseas territory has its own particularities in terms of geography, culture or economy. However, they share a common need for their coral reefs and the ecosystems they are associated with, even though the relative importance of coral reefs for their development might differ. There are 553 species of hard corals (Reef-Forming Coral. The IUCN Red List of Threatened Species. Version 2015., 2015) and 2,150 species of reef fishes that are known to inhabit the reefs of the tropical French overseas territories (Froese et Pauly, 2020). Reef building species of corals in French overseas territories can be found forming barrier reefs, fringing reefs, atolls and patch reefs (Gardes et Salvat, 2008).
+
+These ecosystems continuously provide important services to the overseas French populations, that have been evaluated to US \$1,4 billion, which represents 0.06\% of the country?s GDP. The benefits that coral reefs bring through tourism are estimated to US \$350 million, amounting to 0.01\% of the GDP, generating more than 2,800 direct and 35,000 indirect jobs. Fisheries and aquaculture are estimated to generate US \$240 million, contributing to 0.01\% of the GDP while providing jobs for 14,000 fishermen. They also represent the main source of proteins for 90,000 households. Whilst often forgotten, the coastal protection provided by coral reefs is estimated to amount US \$660 million, which represents 0.03\% of the GDP. This sole service amounts for US \$370 million for the islands of French Polynesia, where most islands are prone to hurricanes and tropical storms (Pascal et al., 2016).
+
+Due to their large repartition and their inherent differences, each territory is not facing the same threats. However, some of the most common threats are climate change, COTS outbreaks, pollution, overfishing and coastal urban development (Bambridge et al., 2019; Gardes et Salvat, 2008).
+
+France has established 629 MPA zones, protecting 3.3 million km\textsuperscript{2} of its EEZ. Out of the 629 MPA zones, 91 contain coral reefs (Marine Conservation Institute, 2020).
+
+\subsection{Description of the available data}
+
+The monitoring effort is relatively widespread, with 230 sites surveyed throughout the tropical French overseas territories according to the data serials provided during the collection period. The observations recorded represent 8.8\% of the GCRMN 2021 database (58,677 rows).
+
+There is some heterogeneity in the monitoring effort in terms of spatial distribution, with some overseas territories being extensively monitored, such as New-Caledonia or Moorea, an island located in French Polynesia, while some territories, such as the French Antilles, Clipperton and numerous atolls of French Polynesia are less represented in the database. Nevertheless, most of the sites recorded in the database have been surveyed for more than 5 years and sometimes for more than 20 years, providing time series for analysis (\ref{fig:coral:classif}).
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\linewidth]{02_individual-map-by-country_france.png}
+	\caption{Sites location and duration of the associated monitoring programs. The EEZ is represented in light blue while the location of existing coral reefs is represented by grey dots (data from Reefs at Risks). Figure made using the GCRMN 2021 Database.}
+	\label{fig:coral:classif}
+\end{figure}
+
+Regarding the time frame, the monitoring effort recorded range from 1990 to 2019. The first years have been marked with a slow increase in the monitoring effort until 2003. Since 2004, the proportion of sites surveyed per year has oscillated between 4 \% and 6 \% (Figure 2A). 
+Technically speaking, line intercept transects have been predominantly used to survey the sites as they have been used for 52\% of the sites, followed by point-intercept transects. Indeed, 37\% of the sites have been surveyed using this method. Only 11\% of the sites have been surveyed using photo-quadrat. The method used was not recorded in the database for 1\% of the sites (figure 2B).
+
+Line intercept transect has remained the main method used to monitor coral reefs throughout the three time periods (508 times between 2010 and 2019). Point intercept transect started to be used during the 2000-2009 period and the number of sites surveyed using this method increased in the 2010-2019 period (432 times between 2010 and 2019). Photo-quadrat has been used since the 1970-1999 period but its relative importance is low compared to the other methods (86 times between 2010 and 2019) (figure 2C).
+
+Benthic observations were categorized into 7 groups, which were named as following: abiotic, hard living coral cover, hard bleached coral, hard dead coral, algae, other fauna and seagrass. Some of these groups are further divided into subgroups, such as the group Other fauna, which encompasses observations of Alcyonacea, Porifera and Tunicata in addition to other subgroups (see Method for the full list). On top of this classification into groups and subgroups, the identifications of benthic organisms were made up to the species when possible, which is the most precise level of taxonomic identification. There has been a general decrease of the precision level at which the observations were recorded over the years. The proportion of observations recorded at the genus level or above decreased from almost 70\% for the 1979-1999 period to approximately 30\% for the 2010-2019 period, while the proportion of observations made at the subgroup level increased. The latter represented approximately 24\% of the observations for the 1979-1999 period and went up to 51\% of the observations made between 2010 and 2019 (figure 2D).
+
+Observations of algae have been identified to the subgroup level (coralline algae, macroalgae and turf algae) for 77\% of the observations (figure 2E).
+The observations of benthic fauna other than hard coral species were recorded at least to the subgroup level for 96\% of the observations (figure 2F). 
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\linewidth]{03_graph-description-method-combined_france.png}
+	\caption{Sites location and duration of the associated monitoring programs. The EEZ is represented in light blue while the location of existing coral reefs is represented by grey dots (data from Reefs at Risks). Figure made using the GCRMN 2021 Database.}
+	\label{fig:coral:c4}
+\end{figure}
+
+\subsection{Analysis of the data coverage through the ICRI coral reef indicators and recommendations}
+
+\subsubsection{Potential limitations and recommendations on benthic cover monitoring}
+
+Based on the data on the benthic cover presented above (with a strong focus on biotic variables), the following limits and general recommendations were formulated in order to improve the monitoring of coral reefs at the country?s level.
+
+\textbf{Spatial Extent}. The spatial coverage varies significantly between the different French overseas territories, certain regions being less monitored than others. To increase the spatial coverage of monitoring programs, we recommend to put in place additional monitoring sites on the reefs around Wallis and Futuna and in French Polynesia, notably in the Tuamotu.
+
+\textbf{Temporal Extent}. The temporal extent of numerous monitoring sites is greater than 10 years, representing a valuable record on coral reefs trends, which should be pursued.
+
+\textbf{Methodology}. Line and point intercept transect are predominantly used to monitor coral reefs in the French overseas territories. While these methods provide useful data, photo-quadrat makes possible to come back later on the photo and to get more details about the taxonomic composition of the benthic communities. Thus, we recommend to use this method for future monitoring sites.
+
+\textbf{Taxonomic precision}. Almost half of the available data correspond to a true taxonomic classification (family or below), which is particularly relevant to characterise changes in benthic composition through time. However, 23\% of algae observation have been identified only to the group. Though it is sufficient, we recommend to improve the observations at least to the subgroup level.
+
+\subsubsection{Status of ICRI recommended coral reef indicators}
+
+The implementation of the ICRI recommended indicators at the country?s scale has been evaluated based on 4 criteria: the temporal and spatial extent of the available data, the methods used to monitor the coral reefs and the precision level at which the observations were recorded. The results are presented in figure 3.
+
+\begin{enumerate}
+	\item \textbf{Live Coral Cover}. This indicator has been monitored throughout the French overseas territories on 230 sites and is available for 30 different years from 1990 to 2019. Furthermore, all requirements are met (figure 3). Thus, this indicator can be considered in use at the country's level. 
+	\item \textbf{Fleshy Algae Cover and Cover of Key Benthic Groups}. Based on the analysis of the four criteria (\ref{fig:coral:c5}), all the requirements are met for this indicator to be considered as measured when monitoring coral reefs at the country's level.
+	\item \textbf{Fish Abundance and Biomass}. This indicator was not taken into account during the data acquisition and the homogenization process prior to the elaboration of the GCRMN 2021 database. Thus, it is not possible to assess whether this indicator is effectively monitored or not in the country based on the data at hand.
+\end{enumerate}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\linewidth]{bitmap.png}
+	\caption{Sites location and duration of the associated monitoring programs. The EEZ is represented in light blue while the location of existing coral reefs is represented by grey dots (data from Reefs at Risks). Figure made using the GCRMN 2021 Database.}
+	\label{fig:coral:c5}
+\end{figure}
+
+\subsubsection{Main contacts}
+
+\lipsum[1]
+
+%%%%% CONCLUSION %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Conclusion et Perspectives}
+
+\thispagestyle{empty}
+
+\newpage
+
+
+\noindent
+\begin{tikzpicture}[color2]
+	\fill (-5,0) rectangle (5,3);
+\end{tikzpicture}
+
+
+\newpage
+
+%%%%% REFERENCES %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\titlespacing*{\chapter}{0pt}{-50pt}{40pt} % To remove chapter head (space at the beginning of the page)
+
+\bibliographystyle{unsrt}
+\bibliography{bibliography}
+
+\thispagestyle{empty}
+
+\newpage
+
+%%%%% GLOSSARY %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter*{Glossaire} 
+\addcontentsline{toc}{chapter}{Glossaire}
+
+\textbf{Résilience} (\textit{resilience}) Capacité d'un système à revenir à un état initial après avoir subit une perturbation. Le concept est discuté dans la partie .
+
+\thispagestyle{empty}
+
+\newpage
+
+%%%%% ACKNOWLEDGMENTS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter*{Remerciements} 
+\addcontentsline{toc}{chapter}{Remerciements}
+
+\thispagestyle{empty}
+
+\newpage
+
+\thispagestyle{empty}
+
+\vspace*{22cm}
+
+\begin{center}
+	{\footnotesize
+	
+	Document créé avec \LaTeX
+	
+	Compilé avec MiKTeX-pdfTeX version 2.9.7338 
+	
+	Le \today}
+\end{center}
+
+
+
+\end{document}
