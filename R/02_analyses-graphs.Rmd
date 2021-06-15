@@ -483,7 +483,7 @@ taxo_algae %>%
 
 taxo_othfau <- data_benthos %>% 
   filter(Category == "Other fauna") %>% 
-  mutate(Group = ifelse(Group %in% c("Porifera", "Tunicata", "Alcyonacea") | is.na(Group), Group, "Other groups"),
+  mutate(Group = ifelse(Group %in% c("Porifera", "Tunicata", "Alcyonacea") | is.na(Group), Group, "Other subgroups"),
          Group = ifelse(is.na(Group), "Unknown", Group)) %>% 
   group_by(SOVEREIGN1, Group) %>% 
   count(name = "n_row") %>% 
@@ -492,7 +492,7 @@ taxo_othfau <- data_benthos %>%
   mutate(total = sum(n_row)) %>% 
   ungroup() %>% 
   mutate(row_rel = (n_row*100)/total,
-         Group = factor(Group, levels = c("Unknown", "Tunicata", "Porifera", "Other groups", "Alcyonacea")))
+         Group = factor(Group, levels = c("Unknown", "Tunicata", "Porifera", "Other subgroups", "Alcyonacea")))
 
 # 2. Make the loop to produce each plot ----
 
@@ -510,7 +510,7 @@ for (i in unique(taxo_othfau$SOVEREIGN1)) {
       geom_bar(stat = "identity") +
       coord_flip() + 
       scale_fill_manual(name = "Subgroup of other fauna",
-                        breaks = c("Alcyonacea", "Other groups", "Porifera", "Tunicata", "Unknown"),
+                        breaks = c("Alcyonacea", "Other subgroups", "Porifera", "Tunicata", "Unknown"),
                         values = c("#e47833", "#f4b350", "#947cb0", "#fff9de", "#6c7a89"),
                         drop = FALSE) +
       theme(axis.text.y = element_blank(),
