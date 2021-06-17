@@ -61,7 +61,7 @@ country_fishes <- country_fishes %>%
                                                "Glorieuses Is.", "Clipperton I.", "France") ~ "France",
                              subcountry %in% c("Virgin Is. (UK)", "Montserrat", "Pitcairn",
                                                "Turks Caicos Is.", "Anguilla", "Bermuda",
-                                               "Cayman Is.", "UK") ~ "United Kingdom",
+                                               "Cayman Is.", "Chagos Is.", "UK") ~ "United Kingdom",
                              subcountry %in% c("American Samoa", "Virgin Is. (US)", "Guam",
                                                "Hawaii", "Johnston I.", "North Marianas", "USA",
                                                "US Misc Pac", "Wake I.") ~ "United States",
