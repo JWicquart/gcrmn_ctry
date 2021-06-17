@@ -61,14 +61,15 @@ data_benthos <- data_benthos %>%
 
 load(file = "./../data/reefs.eez.RData")
 
-# 2. Transform to an sf object ----
+# 2. Calculate the reef area by country ----
 
-data_reefs <- reefs.eez %>% 
-  st_as_sf()
-
-# 3. Calculate the reef area by country ----
-
-data_reefs <- data_reefs %>% 
+data_reefs <- reefs.eez %>%
+  # Re-assign TERRITORY1 depending on geopolitical issues
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1)) %>% 
+  # Convert to sf
+  st_as_sf() %>% 
   # Calculate the reef area and transform it from m2 to km2
   mutate(reef_area = as.numeric(st_area(.))/1000000) %>%
   # Make the sum of area by country
@@ -86,13 +87,13 @@ data_reefs <- data_reefs %>%
   mutate(total_area_abs = round(as.numeric(total_area_abs), 3),
          total_area_rel = round(as.numeric(total_area_rel), 3))
 
-# 4. Make the table ----
+# 3. Make the table ----
 
 data_reefs %>% 
   formattable(.) %>% 
   as.datatable(., rownames = FALSE, colnames = c("N°", "Country", "Area (km²)", "Relative (%)"))
 
-# 5. Export the table ----
+# 4. Export the table ----
 
 write_csv2(data_reefs, "../figs/04_table-reef-surface-by-country.csv")
 
