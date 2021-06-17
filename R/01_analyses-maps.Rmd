@@ -60,8 +60,10 @@ load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
 # 4.3 EEZ data --
 
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
-  # Change SOVEREIGN1 for Gloriosos islands from Madagascar to France
-  mutate(SOVEREIGN1 = ifelse(TERRITORY1 == "Glorioso Islands", "France", SOVEREIGN1)) %>% 
+  # Re-assign Territory depending to geopolitical issues
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1)) %>% 
   # Extract top 30 countries
   filter(SOVEREIGN1 %in% unique(data_benthos$SOVEREIGN1))
 
@@ -597,7 +599,8 @@ ggsave(plot_us, file = "../figs/02_individual-map-by-country_united-states.png",
 data_eez_sovereign <- data_eez %>% 
   filter(TERRITORY1 %in% c("Pitcairn", "Anguilla", "British Virgin Islands",
                            "Cayman Islands", "Montserrat", "Turks and Caicos Islands",
-                           "Bermuda"))
+                           "Bermuda", "Chagos Archipelago")) %>% 
+  mutate(TERRITORY1 = str_replace_all(TERRITORY1, c("Chagos Archipelago" = "BIOT")))
 
 # 2. Filter benthos time-range ----
 
@@ -608,7 +611,8 @@ data_benthos_range_i <- data_benthos_range %>%
 
 plot_uk <- ggarrange(ggarrange(ggplot_map_eez(territory_name = "Turks and Caicos Islands", title = TRUE),
                      ggplot_map_eez(territory_name = "Cayman Islands", title = TRUE), 
-                     ggplot_map_eez(territory_name = "Bermuda", title = TRUE), ncol = 3),
+                     ggplot_map_eez(territory_name = "BIOT", title = TRUE), 
+                     ggplot_map_eez(territory_name = "Bermuda", title = TRUE), ncol = 4),
           ggplot_map_global(), 
           ggarrange(ggplot_map_eez(territory_name = "Pitcairn", title = TRUE),
                     ggplot_map_eez(territory_name = "Montserrat", title = TRUE),

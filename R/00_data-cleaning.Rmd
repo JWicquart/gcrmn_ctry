@@ -40,14 +40,15 @@ library(rgdal) # To open shapefile
 
 load(file = "./../data/reefs.eez.RData")
 
-# 2. Transform to an sf object ----
+# 2. Calculate the reef area by country ----
 
-data_reefs <- reefs.eez %>% 
-  st_as_sf()
-
-# 3. Calculate the reef area by country ----
-
-data_reefs <- data_reefs %>% 
+data_reefs <- reefs.eez %>%
+  # Re-assign TERRITORY1 depending on geopolitical issues
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1)) %>% 
+  # Convert to sf
+  st_as_sf() %>% 
   # Calculate the reef area and transform it from m2 to km2
   mutate(reef_area = as.numeric(st_area(.))/1000000) %>%
   # Make the sum of area by country
@@ -82,7 +83,9 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp")
 # 2. Change SOVEREIGN1 for Gloriosos islands from Madagascar to France ----
 
 data_eez <- data_eez %>% 
-  mutate(SOVEREIGN1 = ifelse(TERRITORY1 == "Glorioso Islands", "France", SOVEREIGN1))
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1))
 
 ```
 
@@ -90,45 +93,30 @@ data_eez <- data_eez %>%
 
 ```{r}
 
-# Import database 
-#data_benthos <- read.csv2("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/03-merge_all_all_all_benthos_NA.csv")
-
-data_benthos <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv")
-
-# Delete datasets belonging to Reef Life Surfey and XL Catlin Seaview -> too different, induce a bias
-  
-data_benthos <- data_benthos %>% 
-   filter(!(DatasetID %in% c("XLCA1", "XLCA2", "XLCA3", "XLCA4", "XLCA5",
-                            "PACN1.1", "PACN1.2", "PACN1.3", "PACN1.4",
-                            "TIAH1", "RFCK1")))
-
-# Converts the coordinates in the database in an sf object
-
-data_benthos_join <- data_benthos %>% 
-  # Remove NA
-  drop_na(Latitude, Longitude, Year) %>%
-  # Set as sf object
-   st_as_sf(., coords = c("Longitude", "Latitude"))
-
-# Add a CRS to the database (CRS = WGS84, ESPG = 4326)
-st_crs(data_benthos_join) <- 4326
-
-# Join the location sites to the EEZs to get the real names $SOVEREIGN1
-data_benthos_join <- st_join(data_benthos_join, data_eez)
-
-# Get top 30 from data_reefs
+# 1. Extract the top 30 countries in reef surface ----
 
 top_30 <- data_reefs %>% 
   select(pos, SOVEREIGN1) %>% 
   slice(1:31) %>% 
   filter(SOVEREIGN1 != "Mauritius")
 
-# Extract top 30 countries from data_benthos
+# 2. Extract benthic GCRMN data corresponding to the top 30 ---- 
 
-data_benthos <- data_benthos_join %>% 
+data_benthos <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv") %>% 
+  # Remove some datasets (those leading to bias)
+  filter(!(DatasetID %in% c("XLCA1", "XLCA2", "XLCA3", "XLCA4", "XLCA5",
+                            "PACN1.1", "PACN1.2", "PACN1.3", "PACN1.4",
+                            "TIAH1", "RFCK1"))) %>% 
+  # Remove NA
+  drop_na(Latitude, Longitude, Year) %>%
+  # Set as sf object
+  st_as_sf(., coords = c("Longitude", "Latitude"), crs = 4326) %>% 
+  # Join with EEZ
+  st_join(., data_eez) %>% 
+  # Extract top 30 countries in reef surface
   filter(SOVEREIGN1 %in% unique(top_30$SOVEREIGN1))
 
-# Export to RData
+# 3. Save the data ----
 
 save(data_benthos, file = "./../data/00_filtered/00-data_benthos-top_30.RData")
 

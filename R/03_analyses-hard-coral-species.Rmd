@@ -45,13 +45,15 @@ crs_used <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 
 # 4.1 IUCN data --
 
-#data_corals <- readRDS("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/map/iucn_data.rds")
+data_corals <- readRDS("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/map/iucn_data.rds")
 
 # 4.2 EEZ data --
 
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
   # Change SOVEREIGN1 for Gloriosos islands from Madagascar to France
-  mutate(SOVEREIGN1 = ifelse(TERRITORY1 == "Glorioso Islands", "France", SOVEREIGN1))
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1))
 
 ```
 
