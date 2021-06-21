@@ -70,6 +70,8 @@ data_reefs <- reefs.eez %>%
                                 TRUE ~ SOVEREIGN1)) %>% 
   # Convert to sf
   st_as_sf() %>% 
+  # Transform CRS to "World_Plate_Carree" better crs for surface estimation of reef
+  st_transform(., crs = 32663) %>% 
   # Calculate the reef area and transform it from m2 to km2
   mutate(reef_area = as.numeric(st_area(.))/1000000) %>%
   # Make the sum of area by country
