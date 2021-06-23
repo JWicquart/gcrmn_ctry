@@ -196,11 +196,7 @@ data_method <- data_benthos %>%
                             Method %in% c("visual census",
                                           "visual quadrat estimation",
                                           "vis est.") ~ "Visual census",
-                            Method %in% c("chain intercept method",
-                                          "cross intercept transect",
-                                          "perpendicular intercept transect",
-                                          "video-transect",
-                                          "other") ~ "Other methods",
+                            Method == "video-transect" ~ "Video transect",
                             TRUE ~ "Unknown")) %>% 
   group_by(Method, SOVEREIGN1) %>% 
   count(name = "Abs") %>% 
@@ -209,7 +205,7 @@ data_method <- data_benthos %>%
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
         Method = as.factor(Method),
-        Method = factor(Method, levels = rev(c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown")))) %>% 
+        Method = factor(Method, levels = rev(c("Photo-quadrat", "LIT", "PIT", "Video transect", "Visual census", "Unknown")))) %>% 
   ungroup() %>% 
   arrange(SOVEREIGN1)
 
@@ -233,7 +229,7 @@ for (i in unique(data_method$SOVEREIGN1)) {
           axis.title = element_text(size = 16),
           plot.tag = element_text(size = 20),
           plot.margin = margin(t = 0.75, b = 0.75, r = 0.75, l = 0.75, unit = "cm")) +
-    scale_fill_manual(breaks = c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown"),
+    scale_fill_manual(breaks = c("Photo-quadrat", "LIT", "PIT", "Video transect", "Visual census", "Unknown"),
                       values = c("#16a085", "#00b16a", "#00b5cc", "#3498db", "#19b5fe", "#6c7a89"),
                       drop = FALSE) +
     scale_y_continuous(name = "Percentage of surveys", 
@@ -273,11 +269,7 @@ data_method <- data_benthos %>%
                             Method %in% c("visual census",
                                           "visual quadrat estimation",
                                           "vis est.") ~ "Visual census",
-                            Method %in% c("chain intercept method",
-                                          "cross intercept transect",
-                                          "perpendicular intercept transect",
-                                          "video-transect",
-                                          "other") ~ "Other methods",
+                            Method == "video-transect" ~ "Video transect",
                             TRUE ~ "Unknown"),
          Time_range = case_when(Year >= 1970 & Year < 2000 ~ "1970-1999",
                                 Year >= 2000 & Year < 2010 ~ "2000-2009",
@@ -290,7 +282,7 @@ data_method <- data_benthos %>%
   group_by(SOVEREIGN1) %>% 
   mutate(Rel = (Abs/sum(Abs))*100,
          Method = as.factor(Method),
-         Method = factor(Method, levels = c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown"))) %>% 
+         Method = factor(Method, levels = c("Photo-quadrat", "LIT", "PIT", "Video transect", "Visual census", "Unknown"))) %>% 
   ungroup() %>% 
   arrange(SOVEREIGN1)
 
@@ -323,7 +315,7 @@ for (i in unique(data_method$SOVEREIGN1)) {
              stat = "identity", width = 0.7) +
     geom_text(data = data_method_total_i, aes(x = Time_range, y = Rel, label = Abs), vjust = -1) +
     scale_fill_manual(name = "Method",
-                      breaks = c("Photo-quadrat", "LIT", "PIT", "Visual census", "Other methods", "Unknown"),
+                      breaks = c("Photo-quadrat", "LIT", "PIT", "Video transect", "Visual census", "Unknown"),
                       values = c("#16a085", "#00b16a", "#00b5cc", "#3498db", "#19b5fe", "#6c7a89"),
                       drop = FALSE) +
     scale_y_continuous(name = "Percentage of surveys", 
