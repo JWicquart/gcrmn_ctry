@@ -38,6 +38,7 @@ library(magrittr) # To use special pipes
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
+sf_use_s2(FALSE) # Switch from S2 to GEOS
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 library(ggpubr) # To assemble plots
@@ -57,7 +58,11 @@ load("./../data/00_filtered/00-data_benthos-top_30.RData")
 
 load("./../data/00_filtered/00-data_benthos-time_range_monitoring.RData")
 
-# 4.3 EEZ data --
+# 4.3 bbox file --
+
+data_bbox <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
+
+# 4.4 EEZ data --
 
 data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
   # Re-assign Territory depending to geopolitical issues
@@ -65,24 +70,21 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>%
                                 TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
                                 TRUE ~ SOVEREIGN1)) %>% 
   # Extract top 30 countries
-  filter(SOVEREIGN1 %in% unique(data_benthos$SOVEREIGN1))
+  filter(SOVEREIGN1 %in% data_bbox$SOVEREIGN1)
 
-# 4.4 Background maps --
+# 4.5 Background maps --
 
 load(file = "./../data/01_maps/00_background_map.RData")
 
-# 4.5 Background maps country boundaries --
+# 4.6 Background maps country boundaries --
 
 land_boundary <- read_sf("../data/01_maps/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp")
 
-# 4.6 bbox file --
-
-data_bbox <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
-
 # 4.7 Coral distribution --
 
-coral_distribution <- read.csv("./../data/01_maps/02-clean_coral-distribution-reef-at-risk-data.csv") %>% 
-  st_as_sf(., coords = c("long", "lat"), crs = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+coral_distribution <- read_sf("../data/02_reefs-at-risk_reef-data/reef_500_poly.shp") %>% 
+  st_transform(crs = 4326) %>% 
+  st_wrap_dateline()
 
 ```
 
@@ -221,7 +223,7 @@ data_eez_i <- data_eez %>%
   st_transform(., crs = 3460) %>% 
   st_union(.)
 
-data_eez_i %<>% # Special pipe from magittr
+data_eez_i %<>% # Special pipe from magrittr
   st_buffer(10) # To join polygon (remove vertical line)
 
 # 1.2 Background map --
