@@ -35,13 +35,11 @@ library(rgdal) # To open shapefile
 
 # 1. Reef area by country
 
-# 1.1 Join EEZ and reef area
-
 ```{r}
 
 # 1. Load and transform EEZ data ----
 
-data_eez <- read_sf("../data/World_EEZ_v11_20191118/eez_v11.shp") %>% 
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
   select(SOVEREIGN1, TERRITORY1) %>% 
   mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
                                 TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
@@ -61,7 +59,111 @@ data_rar <- read_sf("../data/02_reefs-at-risk_reef-data/reef_500_poly.shp") %>%
 
 # 3. Join the data ----
 
-data_eez_joined <- st_join(data_rar, data_eez)
+data_eez_joined <- st_intersection(data_rar, data_eez)
+
+```
+
+
+```{r}
+
+# 1. Load data_eez_joined (result from previous R chunk) ----
+
+load("../data/data_eez_joined.RData")
+
+# 2. Load ecoregions from Veron et al, 2015 to extract the specific CRS ----
+
+load("../data/TEST/ecoregions.RData")
+
+# 2. Load and transform data from Reefs at Risk, 2011 ----
+
+data_eez_joined <- data_eez_joined  %>% 
+  st_transform(crs = st_crs(ecoregions)) %>% 
+  st_make_valid() %>% 
+  mutate(area_ctry = st_area(.)) %>% 
+  st_drop_geometry() %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(total_area_abs = sum(area_ctry)) %>% 
+  ungroup() %>% 
+  drop_na(SOVEREIGN1) %>% #○ Doing so I remove a small portion of unassigned reef surface
+  # Convert from m² to km²
+  mutate(total_area_abs = as.numeric(total_area_abs)/10^6) %>% 
+  # Sort rows from higher reef area to lower
+  arrange(-total_area_abs) %>% 
+  # Calculate the relative contribution
+  mutate(total_area_rel = total_area_abs*100/sum(total_area_abs),
+         pos = row_number()) %>% 
+  # Re-order variables
+  select(pos, SOVEREIGN1, total_area_abs, total_area_rel) 
+
+sum(data_eez_joined$total_area_abs)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Test wkt crs murray
+
+
+```{r}
+
+
+ggplot() +
+  geom_sf(data = ecoregions, aes(fill = Ecoregion), show.legend = FALSE)
+
+st_crs(ecoregions)
+
+```
+
+```{r}
+
+data_rar <- read_sf("../data/02_reefs-at-risk_reef-data/reef_500_poly.shp")  %>% 
+  st_transform(crs = st_crs(ecoregions))
+
+st_area(data_rar)/10^6
+
+```
+
+
+# 1.1 Join EEZ and reef area
+
+```{r}
+
+# 1. Load and transform EEZ data ----
+
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
+  select(SOVEREIGN1, TERRITORY1) %>% 
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1)) %>% 
+  st_wrap_dateline() %>% 
+  st_transform(., crs = 4326)
+
+# 2. Load and transform reef area data (from Reefs at Risk, 2011) ----
+
+data_rar <- read_sf("../data/02_reefs-at-risk_reef-data/reef_500_poly.shp") %>% 
+  st_transform(., crs = 4326) %>% 
+  st_wrap_dateline() %>% 
+  st_transform(., crs = 32663) %>% 
+  st_cast("POLYGON") %>% 
+  mutate(AREA = st_area(.)) %>% 
+  st_transform(., crs = 4326)
+
+# 3. Join the data ----
+
+data_eez_joined <- st_intersection(data_rar, data_eez)
 
 # 4. Save the data ----
 
@@ -102,6 +204,64 @@ data_reefs <- data_eez_joined %>%
   select(pos, SOVEREIGN1, total_area_abs, total_area_rel)
 
 ```
+
+```{r}
+
+data_eez <- data_eez %>% 
+  filter(SOVEREIGN1 %in% c("Egypt", "Sudan"))
+
+ggplot() +
+  geom_sf(data = data_eez, aes(fill = SOVEREIGN1))
+
+data_rar_sect <- st_join(data_rar, data_eez, join = st_intersects) %>% 
+    filter(SOVEREIGN1 %in% c("Egypt", "Sudan"))
+
+ggplot() +
+  geom_sf(data = data_rar_sect, aes(fill = SOVEREIGN1)) +
+  geom_sf(data = data_eez, col = "red", fill = NA) +
+  coord_sf(xlim = c(35, 38), ylim = c(23, 24))
+
+data_rar_section <- st_intersection(data_rar, data_eez) %>% 
+    filter(SOVEREIGN1 %in% c("Egypt", "Sudan"))
+
+ggplot() +
+  geom_sf(data = data_rar_section, aes(fill = SOVEREIGN1)) +
+  geom_sf(data = data_eez, col = "red", fill = NA) +
+  coord_sf(xlim = c(35, 38), ylim = c(23, 24))
+
+```
+
+```{r}
+
+data_eez_test <- data_eez %>% 
+  filter(SOVEREIGN1 %in% c("Sudan", "Egypt"))
+
+data_eez_test_buf <- data_eez_test %>% 
+  st_buffer(., dist = 0.5)
+
+
+data_full <- st_sym_difference(data_eez_test, data_eez_test_buf)
+
+ggplot() +
+  geom_sf(data = data_full, alpha = 0.5, aes(fill = SOVEREIGN1))
+
+
+data_full <- st_intersection(data_eez_test, data_eez_test_buf)
+
+ggplot() +
+    geom_sf(data = data_eez_test, alpha = 0.5, aes(fill = SOVEREIGN1)) +
+  geom_sf(data = data_eez_test_buf, alpha = 0.5, aes(fill = SOVEREIGN1))
+
+
+ggplot() +
+  geom_sf(data = data_eez_test, alpha = 0.5, aes(fill = SOVEREIGN1)) +
+  geom_sf(data = data_eez_test_buf, alpha = 0.5, aes(fill = SOVEREIGN1))
+
+
+
+
+```
+
 
 # 2. Economic Exclusive Zone
 
