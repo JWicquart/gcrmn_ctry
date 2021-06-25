@@ -82,6 +82,20 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
                                         "VUT" = "Vanuatu")))
 
 
+# 3.2. Transformed data from WRI - Reefs merged with EEZ
+
+load(file = "./../data/reefs.eez.RData")
+
+
+data_reefs <- reefs.eez %>%
+  # Re-assign TERRITORY1 depending on geopolitical issues
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1)) %>% 
+  # Convert to sf
+  st_as_sf() 
+
+
 
 # 3.2 Coral distribution - CRS in meters
 
@@ -118,6 +132,7 @@ mpa_w_reef <- data_mpa %>%
   ungroup() %>% 
   arrange(SOVEREIGN1) %>% 
   left_join(data_mpa_top30, .)
+
 
 
 
@@ -168,9 +183,117 @@ mpa_table <- as.data.frame(mpa_area, row.names = T) %>%
 
 write_csv2(mpa_table, "../figs/02_mpa-with-reef.csv")
 
+
 ```
 
 
+# Spatial overlap global coral reefs with MPA polygon 
+
+```{r}
+
+top_30 <- unique(data_mpa$SOVEREIGN1)
+
+# 1. Dissolve all MPA zones in one polygon per country
+
+mpa_tot <- list()
+
+for (i in top_30) {
+  
+  data_mpa_i <- data_mpa %>% 
+    filter(SOVEREIGN1 == i) 
+    
+  mpa_poly_i <- st_as_sf(st_union(st_combine(data_mpa_i), by_feature = T))
+
+  mpa_tot[[i]] = mpa_poly_i
+  
+}
+
+
+# 2. Clean table with all MPA related information
+
+mpa_table <- as.data.frame(mpa_tot, row.names = T) %>% 
+  
+  pivot_longer(., "Australia":"Vanuatu", names_to = "SOVEREIGN1", values_to = "geometry") %>% 
+  mutate(SOVEREIGN1 = str_replace_all(SOVEREIGN1, 
+                                      c("Marshall.Islands" = "Marshall Islands",
+                                        "Papua.New.Guinea" = "Papua New Guinea",
+                                        "Saudia.Arabia" = "Saudi Arabia",
+                                        "Solomon.Islands" = "Solomon Islands",
+                                        "United.Kingdom" = "United Kingdom",
+                                        "United.States" = "United States"))) %>% 
+  arrange(SOVEREIGN1) 
+
+
+
+
+
+# 3. Export to RData
+
+save(mpa_tot, 
+     file = "./../data/00_filtered/00-data_mpa_merged.RData")
+    
+
+# 2. Clean table with all MPA related information
+
+mpa_table <- as.data.frame(mpa_tot, row.names = T) %>% 
+  
+  pivot_longer(., "Australia":"Vanuatu", names_to = "SOVEREIGN1", values_to = "geometry") %>% 
+  mutate(SOVEREIGN1 = str_replace_all(SOVEREIGN1, 
+                                      c("Marshall.Islands" = "Marshall Islands",
+                                        "Papua.New.Guinea" = "Papua New Guinea",
+                                        "Saudia.Arabia" = "Saudi Arabia",
+                                        "Solomon.Islands" = "Solomon Islands",
+                                        "United.Kingdom" = "United Kingdom",
+                                        "United.States" = "United States"))) %>% 
+  arrange(SOVEREIGN1) %>% 
+  left_join(mpa_w_reef, .)
+
+
+# 3. Save table 
+
+write_csv2(mpa_table, "../figs/02_mpa-with-reef.csv")
+
+################################# TEST
+country_test <- data_mpa %>% filter(SOVEREIGN1 == "Egypt")
+
+mpa_comb <- st_union(st_combine(country_test), by_feature = T) %>% 
+  st_as_sf()
+
+protected_reef <- reefs.eez %>% 
+  st_transform(., crs = 4326) %>% 
+  #mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+   #                             TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+    #                            TRUE ~ SOVEREIGN1)) %>% 
+  filter(SOVEREIGN1 == "Egypt") %>% 
+  # Convert to sf
+  st_as_sf() %>% 
+  st_intersection(., mpa_comb)
+  #st_join(., mpa_comb, left = FALSE, join = st_intersects)
+  
+reef_mpa_area_tot <- protected_reef %>% 
+  mutate(reef_area = as.numeric(st_area(protected_reef)/1000000)) %>% 
+  st_drop_geometry() %>% 
+  summarise(total_reef_mpa = sum(reef_area))  
+  
+
+
+
+ggplot() +
+  geom_sf(data = mpa_comb) +
+  geom_sf(data = protected_reef)
+
+
+###################################
+
+
+
+  
+```
+
+
+
+
+```{r}
 
 # Reproducibility
 
