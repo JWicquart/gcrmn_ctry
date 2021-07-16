@@ -73,7 +73,15 @@ data_reefs %>%
 
 ```{r}
 
-# 1. Number of sites per country ----
+# 1. Full GCRMN dataset (all countries not only top 30) ----
+
+data_benthos_all <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv") %>% 
+  # Remove some datasets (those leading to bias)
+  filter(!(DatasetID %in% c("XLCA1", "XLCA2", "XLCA3", "XLCA4", "XLCA5",
+                            "PACN1.1", "PACN1.2", "PACN1.3", "PACN1.4",
+                            "TIAH1", "RFCK1")))
+
+# 2. Number of sites per country ----
 
 nb_sites <- data_benthos %>% 
   select(SOVEREIGN1, Latitude, Longitude) %>% 
@@ -81,21 +89,23 @@ nb_sites <- data_benthos %>%
   group_by(SOVEREIGN1) %>% 
   summarise(n_sites = n())
 
-# 2. Number of observations per country ----
+# 3. Number of observations per country ----
 
 nb_obs <- data_benthos %>% 
   group_by(SOVEREIGN1) %>% 
-  summarise(n_obs = n()) %>% 
+  summarise(n_obs_abs = n()) %>% 
   ungroup() %>% 
-  mutate(tot = sum(n_obs),
-         n_rel = (n_obs*100)/tot) %>% 
-  select(-tot) %>% 
+  mutate(n_obs_rel = (n_obs_abs*100)/(nrow(data_benthos_all))) %>% 
   arrange(SOVEREIGN1)
 
-# 3. Export the table ----
+# 4. Export the table ----
 
 left_join(nb_sites, nb_obs) %>% 
   write_csv2(., "../figs/04_table-monitoring-effort-by-country.csv")
+
+# 5. Remove useless objects ----
+
+rm(data_benthos_all, nb_obs, nb_sites)
 
 ```
 
