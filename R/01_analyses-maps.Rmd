@@ -94,9 +94,9 @@ coral_distribution <- read_sf("../data/02_reefs-at-risk_reef-data/reef_500_poly.
 
 # 1. Transform data to desired projection ----
 
-# 1.1 Define the CRS of global maps (Mollweide) --
+# 1.1 Define the CRS of global maps (Equal Earth) --
 
-crs_global <- "+proj=moll"
+crs_global <- "+proj=eqearth"
 
 # 1.2 Transform the projection of EEZ data --
 
