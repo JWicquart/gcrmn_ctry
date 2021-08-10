@@ -32,8 +32,7 @@ source("functions/graphical_par.R")
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf)
-library(sp)
-library(rgdal)
+sf_use_s2(FALSE) # Switch from S2 to GEOS
 library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 
@@ -45,7 +44,14 @@ crs_used <- "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 
 # 4.1 IUCN data --
 
-data_corals <- readRDS("C:/Users/jwicquart/Desktop/Recherche/Projets/2019-07-08 - Global Coral Reef Monitoring Network/GCRMN_2020/data/map/iucn_data.rds")
+path_corals <- "C:/Users/jwicquart/Desktop/Recherche/Projets/2019-10-24 - PhD thesis/phd/data/REEF_FORMING_CORALS/"
+
+data_corals <- read_sf(paste0(path_corals, "REEF_FORMING_CORALS_PART1.shp")) %>% 
+  rbind(., read_sf(paste0(path_corals, "REEF_FORMING_CORALS_PART2.shp"))) %>% 
+  rbind(., read_sf(paste0(path_corals, "REEF_FORMING_CORALS_PART3.shp"))) %>% 
+  rename(species = binomial)
+
+rm(path_corals)
 
 # 4.2 EEZ data --
 
