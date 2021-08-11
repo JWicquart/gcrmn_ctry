@@ -1,6 +1,5 @@
 ---
 title: "Database importation and modifications"
-output: html_document
 author : "Nina Prasil & Jeremy Wicquart"
 date: "`r Sys.Date()`"
 output: 
@@ -141,8 +140,8 @@ data_benthos_range <- data_benthos %>%
   summarise(interval_years = max(Year, na.rm = TRUE) - min(Year, na.rm = TRUE)) %>%
   ungroup() %>% 
   mutate(interval_class = cut(interval_years, 
-                              breaks = c(-Inf, 1, 5, 10, 20, Inf),
-                              labels = c("1", "2-5", "6-10", "11-20", ">20"))) %>% 
+                              breaks = c(-Inf, 1, 5, 10, 15, Inf),
+                              labels = c("1", "2-5", "6-10", "11-15", ">15"))) %>% 
   st_as_sf(., coords = c("Longitude", "Latitude"), crs = 4326)
 
 # 2. Save the data ----
