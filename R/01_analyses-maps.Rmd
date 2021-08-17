@@ -353,7 +353,10 @@ data_eez_sovereign <- data_eez %>%
   filter(TERRITORY1 %in% c("French Polynesia", "Mayotte", "Ile Tromelin", "New Caledonia", 
                            "Réunion", "Europa Island", "Juan de Nova Island", "Bassas da India", 
                            "Clipperton Island", "Guadeloupe", "Saint-Barthélemy", "Glorioso Islands",
-                           "Collectivity of Saint Martin", "Martinique", "Wallis and Futuna"))
+                           "Collectivity of Saint Martin", "Martinique", "Wallis and Futuna")) %>% 
+  mutate(TERRITORY1 = str_replace_all(TERRITORY1, c("Ile Tromelin" = "Tromelin",
+                                                    "Clipperton Island" = "Clipperton",
+                                                    "Juan de Nova Island" = "Juan de Nova")))
 
 # 2. Filter benthos time-range ----
 
@@ -442,13 +445,13 @@ plot_fr <- ggarrange(ggarrange(ggplot_map_eez(territory_name = "Collectivity of 
                      ggplot_map_global(), 
                      ggarrange(plot_wafu,
                                ggplot_map_eez(territory_name = "French Polynesia", title = TRUE),
-                               ggplot_map_eez(territory_name = "Clipperton Island", title = TRUE),
+                               ggplot_map_eez(territory_name = "Clipperton", title = TRUE),
                                ggplot_map_eez(territory_name = "New Caledonia", title = TRUE), ncol = 4), 
                      ggarrange(ggplot_map_eez(territory_name = "Mayotte", title = TRUE),
-                               ggplot_map_eez(territory_name = "Juan de Nova Island", title = TRUE),
+                               ggplot_map_eez(territory_name = "Juan de Nova", title = TRUE),
                                ggplot_map_eez(territory_name = "Réunion", title = TRUE),
                                plot_baeu,
-                               ggplot_map_eez(territory_name = "Ile Tromelin", title = TRUE), ncol = 5),
+                               ggplot_map_eez(territory_name = "Tromelin", title = TRUE), ncol = 5),
                      nrow = 4, heights = c(1, 2, 1, 1))
 
 # 5. Save the plot ----
