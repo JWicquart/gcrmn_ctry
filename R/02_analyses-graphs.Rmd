@@ -77,9 +77,7 @@ data_reefs %>%
 
 data_benthos_all <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv") %>% 
   # Remove some datasets (those leading to bias)
-  filter(!(DatasetID %in% c("XLCA1", "XLCA2", "XLCA3", "XLCA4", "XLCA5",
-                            "PACN1.1", "PACN1.2", "PACN1.3", "PACN1.4",
-                            "TIAH1", "RFCK1")))
+  filter(!(DatasetID %in% c("XLCA1", "XLCA2", "XLCA3", "XLCA4", "XLCA5")))
 
 # 2. Number of sites per country ----
 
