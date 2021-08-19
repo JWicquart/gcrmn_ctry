@@ -49,7 +49,7 @@ data_benthos <- data_benthos %>%
          Group = as.character(Group)) %>% 
   mutate(Longitude = st_coordinates(.)[,"X"],
          Latitude = st_coordinates(.)[,"Y"]) %>% 
-  st_drop_geometry(.) 
+  st_drop_geometry(.)
 
 ```
 
@@ -373,12 +373,26 @@ for (i in unique(precision_taxo$SOVEREIGN1)) {
   
 }
 
-# 3. Export the table ----
+# 3. Add taxonomic precision across all time-ranges ----
+
+precision_taxo <- precision_taxo %>% 
+  select(-Rel) %>% 
+  group_by(SOVEREIGN1, Tax_lvl) %>% 
+  summarise(Abs = sum(Abs)) %>% 
+  ungroup() %>% 
+  group_by(SOVEREIGN1) %>% 
+  mutate(Rel = (Abs/sum(Abs))*100) %>% 
+  ungroup() %>% 
+  mutate(Time_range = "All") %>% 
+  bind_rows(precision_taxo, .)
+
+# 4. Export the table ----
 
 precision_taxo %>% 
   select(-Abs) %>% 
   pivot_wider(names_from = "Tax_lvl", values_from = "Rel") %>% 
   select(SOVEREIGN1, Time_range, Group, Subgroup, Family, Genus, Species) %>% 
+  arrange(SOVEREIGN1, Time_range) %>% 
   write_csv2(., "../figs/04_table-relative-taxonomic-precision-global.csv")
 
 ```
