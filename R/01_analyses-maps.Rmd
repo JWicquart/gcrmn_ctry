@@ -43,6 +43,7 @@ library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 library(ggpubr) # To assemble plots
 library(ggsflabel)
+library(magick)
 
 # 3. Set default ggplot theme ----
 
@@ -70,7 +71,13 @@ data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>%
                                 TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
                                 TRUE ~ SOVEREIGN1)) %>% 
   # Extract top 30 countries
-  filter(SOVEREIGN1 %in% data_bbox$SOVEREIGN1)
+  filter(SOVEREIGN1 %in% data_bbox$SOVEREIGN1) %>% 
+  # Remove territories that do not contains coral reefs 
+  filter(!(TERRITORY1 %in% c("Kerguélen", "Falkland / Malvinas Islands", "United Kingdom", "France",
+                             "Saint Helena", "Alaska", "Crozet Islands", "Amsterdam and Saint Paul Islands",
+                             "South Georgia and the South Sandwich Islands", "Jersey", "Guernsey", "French Guiana",
+                             "Heard and McDonald Islands", "Macquarie Island", "Ascension",
+                             "Saint-Pierre and Miquelon", "Tristan da Cunha", "Gibraltar")))
 
 # 4.5 Background maps --
 
@@ -150,7 +157,7 @@ for (i in as.character(unique(data_eez_trans$SOVEREIGN1))) {
 
 # 3. Remove data ----
 
-rm(world_map_background, plot_i, data_eez_i, base_ggplot, crs_global, data_eez_trans)
+rm(world_map_background, plot_i, data_eez_i, crs_global, data_eez_trans)
 
 ```
 
@@ -472,7 +479,8 @@ data_eez_sovereign <- data_eez %>%
                            "Howland and Baker islands", "United States", "Hawaii")) %>% 
   filter(POL_TYPE == "200NM") %>% 
   mutate(TERRITORY1 = case_when(ISO_TER1 == "USA" ~ "South Coast of US",
-                                TRUE ~ TERRITORY1))
+                                TRUE ~ TERRITORY1),
+         TERRITORY1 = str_replace_all(TERRITORY1, c("Howland and Baker islands" = "Howland and Baker Islands")))
 
 # 2. Filter benthos time-range ----
 
@@ -584,7 +592,7 @@ plot_us <- ggarrange(ggarrange(plot_hawa,
                      ggarrange(ggplot_map_eez(territory_name = "Johnston Atoll", title = TRUE),
                                ggplot_map_eez(territory_name = "American Samoa", title = TRUE),
                                ggplot_map_eez(territory_name = "Jarvis Island", title = TRUE), ncol = 3),
-                     ggarrange(ggplot_map_eez(territory_name = "Howland and Baker islands", title = TRUE),
+                     ggarrange(ggplot_map_eez(territory_name = "Howland and Baker Islands", title = TRUE),
                                plot_guam,
                                ggplot_map_eez(territory_name = "Wake Island", title = TRUE), ncol = 3),
                      nrow = 4, heights = c(1, 2, 1, 1))
@@ -628,6 +636,197 @@ plot_uk <- ggarrange(ggarrange(ggplot_map_eez(territory_name = "Turks and Caicos
 # 4. Save the plot ----
 
 ggsave(plot_uk, file = "../figs/02_individual-map-by-country_united-kingdom.png", width = 10, height = 8)
+
+```
+
+# 4. Summary indicators
+
+## 4.1 Transform data
+
+```{r}
+
+# 1. Transform indicators ----
+
+data_indicators <- read_xlsx("../data/05_synthesis-indicators.xlsx") %>% 
+  select(SOVEREIGN1, live_coral_cover, other_benthic_gps) %>% 
+  left_join(., data_eez) %>%
+  mutate_at(c("live_coral_cover", "other_benthic_gps"), 
+            ~str_replace_all(., c("green" = "#68C3A3",
+                                  "orange" = "#FF9416",
+                                  "grey" = "#bdc3c7"))) %>% 
+  select(SOVEREIGN1, live_coral_cover, other_benthic_gps, geometry) %>% 
+  st_as_sf()
+
+# 2. Transform subindicators ----
+
+data_subindicators <- read_xlsx("../data/05_synthesis-indicators.xlsx") %>% 
+  select(-live_coral_cover, -other_benthic_gps) %>% 
+  pivot_longer(2:ncol(.), names_to = "subindicator", values_to = "color") %>% 
+  mutate(type = ifelse(str_detect(subindicator, "lcc") == TRUE, "LCC", "OBG"),
+         subindicator = str_remove_all(subindicator, "lcc_|obg_"),
+         subindicator = str_replace_all(subindicator, c("spatial" = "Spatial extent",
+                                                        "temp" = "Temporal extent",
+                                                        "taxo" = "Taxonomic resolution",
+                                                        "meth" = "Monitoring methods")),
+         subindicator = as.factor(subindicator),
+         subindicator = factor(subindicator, levels = c("Spatial extent", 
+                                                        "Temporal extent", "Monitoring methods", 
+                                                        "Taxonomic resolution")),
+         color = str_replace_all(color, c("green" = "#68C3A3",
+                                          "orange" = "#FF9416",
+                                          "grey" = "#bdc3c7"))) %>% 
+  group_by(type, color, subindicator) %>% 
+  count(name = "abs") %>% 
+  ungroup() %>% 
+  group_by(subindicator) %>% 
+  mutate(total = sum(abs),
+         rel = (100*abs)/total)
+
+```
+
+## 4.2 Live coral cover
+
+```{r}
+
+# 1. Map of indicators ----
+
+map_indicator <- base_ggplot +
+  geom_sf(data = data_indicators, aes(fill = live_coral_cover), size = 0.5) +
+  scale_fill_identity() +
+  labs(title = "Live Coral Cover") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# 2. Donuts of subindicators ----
+
+plot_donuts <- data_subindicators %>% 
+  filter(type == "LCC") %>% 
+  ggplot(data = ., aes(x = 2, y = rel, fill = color))+
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  coord_polar("y", start = 200) +
+  theme_void() +
+  scale_fill_identity() +
+  xlim(0.2,2.5) +
+  facet_grid(~subindicator) +
+  theme(strip.text.x = element_text(vjust = 1))
+
+# 3. Make the plot ----
+
+ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5))
+
+# 4. Save the plot ----
+
+ggsave(file = "../figs/05_indicators-summary_live-coral-cover.png", dpi = 600)
+
+# 5. Add logo on the plot ----
+
+# 5.1 Load image --
+
+plot <- image_read("../figs/05_indicators-summary_live-coral-cover.png")
+
+# 5.2 Change the background color --
+
+plot <- image_background(plot, "white")
+
+# 5.3 Load the logos --
+
+logo_spatial <- image_read("../figs/00_logo_spatial-extent.png")
+
+logo_temporal <- image_read("../figs/00_logo_temporal-extent.png")
+
+logo_methods <- image_read("../figs/00_logo_methods.png")
+
+logo_taxo <- image_read("../figs/00_logo_taxo.png")
+
+# 5.4 Convert all images to magick objects --
+
+img <- c(plot, logo_spatial, logo_temporal, logo_methods, logo_taxo)
+
+# 5.5 Combine images --
+
+final <- image_composite(plot, logo_spatial, offset = "+927.5+2235", gravity = "northwest")
+                
+final <- image_composite(final, logo_temporal, offset = "+1700+2235", gravity = "northwest")
+
+final <- image_composite(final, logo_methods, offset = "+2472.5+2235", gravity = "northwest")
+
+final <- image_composite(final, logo_taxo, offset = "+3245+2235", gravity = "northwest")
+
+# 5.6 Save final image --
+
+image_write(final, path = "../figs/05_indicators-summary_live-coral-cover_logo.png", format = "png")
+
+```
+
+## 4.3 Other benthic groups
+
+```{r}
+
+# 1. Map of indicators ----
+
+map_indicator <- base_ggplot +
+  geom_sf(data = data_indicators, aes(fill = other_benthic_gps)) +
+  scale_fill_identity() +
+  labs(title = "Other Benthic Groups") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# 2. Donuts of subindicators ----
+
+plot_donuts <- data_subindicators %>% 
+  filter(type == "OBG") %>% 
+  ggplot(data = ., aes(x = 2, y = rel, fill = color))+
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  coord_polar("y", start = 200) +
+  theme_void() +
+  scale_fill_identity() +
+  xlim(0.2,2.5) +
+  facet_grid(~subindicator) +
+  theme(strip.text.x = element_text(vjust = 1))
+
+# 3. Make the plot ----
+
+ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5))
+
+# 4. Save the plot ----
+
+ggsave(file = "../figs/05_indicators-summary_other-benthic-groups.png", dpi = 600)
+
+# 5. Add logo on the plot ----
+
+# 5.1 Load image --
+
+plot <- image_read("../figs/05_indicators-summary_other-benthic-groups.png")
+
+# 5.2 Change the background color --
+
+plot <- image_background(plot, "white")
+
+# 5.3 Load the logos --
+
+logo_spatial <- image_read("../figs/00_logo_spatial-extent.png")
+
+logo_temporal <- image_read("../figs/00_logo_temporal-extent.png")
+
+logo_methods <- image_read("../figs/00_logo_methods.png")
+
+logo_taxo <- image_read("../figs/00_logo_taxo.png")
+
+# 5.4 Convert all images to magick objects --
+
+img <- c(plot, logo_spatial, logo_temporal, logo_methods, logo_taxo)
+
+# 5.5 Combine images --
+
+final <- image_composite(plot, logo_spatial, offset = "+927.5+2235", gravity = "northwest")
+                
+final <- image_composite(final, logo_temporal, offset = "+1700+2235", gravity = "northwest")
+
+final <- image_composite(final, logo_methods, offset = "+2472.5+2235", gravity = "northwest")
+
+final <- image_composite(final, logo_taxo, offset = "+3245+2235", gravity = "northwest")
+
+# 5.6 Save final image --
+
+image_write(final, path = "../figs/05_indicators-summary_other-benthic-groups_logo.png", format = "png")
 
 ```
 
