@@ -682,6 +682,21 @@ data_subindicators <- read_xlsx("../data/05_synthesis-indicators.xlsx") %>%
   mutate(total = sum(abs),
          rel = (100*abs)/total)
 
+# 3. Calculate percentage and export the table ----
+
+read_xlsx("../data/05_synthesis-indicators.xlsx") %>% 
+  pivot_longer(2:ncol(.), names_to = "indicator", values_to = "color") %>% 
+  group_by(indicator, color) %>% 
+  count() %>% 
+  ungroup() %>% 
+  group_by(indicator) %>% 
+  mutate(rel = (n/sum(n))*100,
+         n = paste0(n, " (", round(rel, 2), "%)")) %>% 
+  ungroup() %>% 
+  select(-rel) %>% 
+  pivot_wider(names_from = color, values_from = n) %>% 
+  write.csv2(., file = "../figs/05_indicators-summary_percentage.csv", row.names = FALSE)
+
 ```
 
 ## 4.2 Live coral cover
