@@ -73,13 +73,7 @@ data_reefs %>%
 
 ```{r}
 
-# 1. Full GCRMN dataset (all countries not only top 30) ----
-
-data_benthos_all <- read.csv2("../data/03-merge_all_all_all_benthos_NA.csv") %>% 
-  # Remove some datasets (those leading to bias)
-  filter(!(DatasetID %in% c("XLCA1", "XLCA2", "XLCA3", "XLCA4", "XLCA5")))
-
-# 2. Number of sites per country ----
+# 1. Number of sites per country ----
 
 nb_sites <- data_benthos %>% 
   select(SOVEREIGN1, Latitude, Longitude) %>% 
@@ -92,7 +86,7 @@ nb_sites <- data_benthos %>%
   select(-pos, -total_area_rel) %>% 
   mutate(sites_100km = (sites_abs*100)/total_area_abs)
 
-# 3. Number of surveys per country ----
+# 2. Number of surveys per country ----
 
 nb_surveys <- data_benthos %>% 
   select(SOVEREIGN1, Latitude, Longitude, Year) %>% 
@@ -105,7 +99,7 @@ nb_surveys <- data_benthos %>%
   select(-pos, -total_area_rel) %>% 
   mutate(surveys_100km = (surveys_abs*100)/total_area_abs)
 
-# 4. Number of observations per country ----
+# 3. Number of observations per country ----
 
 nb_obs <- data_benthos %>% 
   group_by(SOVEREIGN1) %>% 
@@ -116,7 +110,7 @@ nb_obs <- data_benthos %>%
   select(-pos, -total_area_rel) %>% 
   mutate(obs_100km = (obs_abs*100)/total_area_abs)
 
-# 5. Most used method ----
+# 4. Most used method ----
 
 data_method <- data_benthos %>% 
   select(Latitude, Longitude, Year, Method, SOVEREIGN1) %>% 
@@ -148,7 +142,7 @@ data_method <- data_benthos %>%
   select(-Abs) %>% 
   rename(main_method = Method)
 
-# 6. Percentage of observations at the Group level or above ----
+# 5. Percentage of observations at the Group level or above ----
 
 precision_taxo <- data_benthos %>% 
    select(SOVEREIGN1, Year, Category, Group, Family, Genus, Species) %>% 
@@ -168,19 +162,28 @@ precision_taxo <- data_benthos %>%
   mutate(percent_group = (Group_above*100)/(Category + Group_above)) %>% 
   select(-Category, -Group_above)
 
+# 6. Number of years with data ----
+
+nb_years <- data_benthos %>% 
+  select(SOVEREIGN1, Year) %>% 
+  distinct() %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(n_years = n())
+
 # 7. Combine and export the data ----
 
 left_join(nb_sites, nb_surveys) %>% 
   left_join(., nb_obs) %>% 
   left_join(., data_method) %>% 
-  left_join(., precision_taxo) %>% 
+  left_join(., precision_taxo) %>%
+  left_join(., nb_years) %>% 
   select(-total_area_abs) %>% 
   mutate_if(is.numeric, ~round(., digits = 2)) %>% 
   write_csv2(., "../figs/04_table-monitoring-descriptors-by-country.csv")
 
 # 8. Remove useless objects ----
 
-rm(nb_sites, nb_surveys, nb_obs, data_method, precision_taxo)
+rm(nb_sites, nb_surveys, nb_obs, data_method, precision_taxo, nb_years)
 
 ```
 
