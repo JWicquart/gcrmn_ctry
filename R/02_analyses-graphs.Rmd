@@ -175,6 +175,7 @@ left_join(nb_sites, nb_surveys) %>%
   left_join(., data_method) %>% 
   left_join(., precision_taxo) %>% 
   select(-total_area_abs) %>% 
+  mutate_if(is.numeric, ~round(., digits = 2)) %>% 
   write_csv2(., "../figs/04_table-monitoring-descriptors-by-country.csv")
 
 # 8. Remove useless objects ----
