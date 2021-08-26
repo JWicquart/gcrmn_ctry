@@ -69,7 +69,7 @@ data_reefs %>%
 
 ```
 
-# Number of sites
+# Table monitoring descriptors
 
 ```{r}
 
@@ -85,25 +85,101 @@ nb_sites <- data_benthos %>%
   select(SOVEREIGN1, Latitude, Longitude) %>% 
   distinct() %>% 
   group_by(SOVEREIGN1) %>% 
-  summarise(n_sites = n())
+  summarise(sites_abs = n()) %>% 
+  ungroup() %>% 
+  mutate(sites_rel = (sites_abs/sum(sites_abs))*100) %>% 
+  left_join(., data_reefs) %>% 
+  select(-pos, -total_area_rel) %>% 
+  mutate(sites_100km = (sites_abs*100)/total_area_abs)
 
-# 3. Number of observations per country ----
+# 3. Number of surveys per country ----
+
+nb_surveys <- data_benthos %>% 
+  select(SOVEREIGN1, Latitude, Longitude, Year) %>% 
+  distinct() %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarise(surveys_abs = n()) %>% 
+  ungroup() %>% 
+  mutate(surveys_rel = (surveys_abs/sum(surveys_abs))*100) %>% 
+  left_join(., data_reefs) %>% 
+  select(-pos, -total_area_rel) %>% 
+  mutate(surveys_100km = (surveys_abs*100)/total_area_abs)
+
+# 4. Number of observations per country ----
 
 nb_obs <- data_benthos %>% 
   group_by(SOVEREIGN1) %>% 
-  summarise(n_obs_abs = n()) %>% 
+  summarise(obs_abs = n()) %>% 
   ungroup() %>% 
-  mutate(n_obs_rel = (n_obs_abs*100)/(nrow(data_benthos_all))) %>% 
-  arrange(SOVEREIGN1)
+  mutate(obs_rel = (obs_abs/sum(obs_abs))*100) %>% 
+  left_join(., data_reefs) %>% 
+  select(-pos, -total_area_rel) %>% 
+  mutate(obs_100km = (obs_abs*100)/total_area_abs)
 
-# 4. Export the table ----
+# 5. Most used method ----
 
-left_join(nb_sites, nb_obs) %>% 
-  write_csv2(., "../figs/04_table-monitoring-effort-by-country.csv")
+data_method <- data_benthos %>% 
+  select(Latitude, Longitude, Year, Method, SOVEREIGN1) %>% 
+  distinct(.) %>% 
+  mutate(Method = str_split_fixed(Method, ",", 6)[,1],
+         Method = str_to_lower(Method),
+         Method = str_trim(Method, side = "both"),
+         Method = str_squish(Method),
+         Method = case_when(Method %in% c("line intercept transect", 
+                                          "line intersect transect",
+                                          "lit") ~ "LIT",
+                            Method %in% c("point intercept method",
+                                          "point intercept transect",
+                                          "point intersect transect",
+                                          "pit") ~ "PIT",
+                            Method %in% c("photo-quadrat",
+                                          "Photo-quadrat",
+                                          "underwater photo transect") ~ "Photo-quadrat",
+                            Method %in% c("visual census",
+                                          "visual quadrat estimation",
+                                          "vis est.") ~ "Visual census",
+                            Method == "video-transect" ~ "Video transect",
+                            TRUE ~ "Unknown")) %>% 
+  group_by(Method, SOVEREIGN1) %>% 
+  count(name = "Abs") %>% 
+  ungroup() %>% 
+  group_by(SOVEREIGN1) %>% 
+  filter(Abs == max(Abs)) %>% 
+  select(-Abs) %>% 
+  rename(main_method = Method)
 
-# 5. Remove useless objects ----
+# 6. Percentage of observations at the Group level or above ----
 
-rm(data_benthos_all, nb_obs, nb_sites)
+precision_taxo <- data_benthos %>% 
+   select(SOVEREIGN1, Year, Category, Group, Family, Genus, Species) %>% 
+   mutate(Tax_lvl = case_when(!(is.na(Species)) ~ "Species",
+                              !(is.na(Genus)) ~ "Genus",
+                              !(is.na(Family)) ~ "Family",
+                              !(is.na(Group)) ~ "Group",
+                              !(is.na(Category)) ~ "Category")) %>% 
+  mutate(Tax_lvl = str_replace_all(Tax_lvl, c("Group" = "Group_above",
+                                              "Family" = "Group_above",
+                                              "Genus" = "Group_above",
+                                              "Species" = "Group_above"))) %>% 
+  group_by(SOVEREIGN1, Tax_lvl) %>% 
+  summarise(cat_abs = n()) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = Tax_lvl, values_from = cat_abs) %>% 
+  mutate(percent_group = (Group_above*100)/(Category + Group_above)) %>% 
+  select(-Category, -Group_above)
+
+# 7. Combine and export the data ----
+
+left_join(nb_sites, nb_surveys) %>% 
+  left_join(., nb_obs) %>% 
+  left_join(., data_method) %>% 
+  left_join(., precision_taxo) %>% 
+  select(-total_area_abs) %>% 
+  write_csv2(., "../figs/04_table-monitoring-descriptors-by-country.csv")
+
+# 8. Remove useless objects ----
+
+rm(nb_sites, nb_surveys, nb_obs, data_method, precision_taxo)
 
 ```
 
