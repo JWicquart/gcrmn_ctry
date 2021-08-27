@@ -781,7 +781,7 @@ image_write(final, path = "../figs/05_indicators-summary_live-coral-cover_logo.p
 map_indicator <- base_ggplot +
   geom_sf(data = data_indicators, aes(fill = other_benthic_gps)) +
   scale_fill_identity() +
-  labs(title = "Other Benthic Groups") +
+  labs(title = "Fleshy Algae Cover and Cover of Key Benthic Groups") +
   theme(plot.title = element_text(hjust = 0.5))
 
 # 2. Donuts of subindicators ----
