@@ -59,6 +59,7 @@ load("./../data/02_mpa/00-data_mpa_union.RData")
 
 ## 3. Overlap reefs and MPA
 # Intersection coral reefs and MPA
+top_30 <- unique(total_mpa$SOVEREIGN1)
 
 protected_reefs <- data_reefs %>% 
   filter(SOVEREIGN1 %in% top_30) %>% 
