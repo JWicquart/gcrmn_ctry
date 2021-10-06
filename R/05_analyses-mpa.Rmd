@@ -19,30 +19,51 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 
 ```
 
+# Import functions, packages and data
 
-## A DESTINATION DU PRINCE ##
 ```{r}
 
-##### 1. Required packages ----
+# 1. Required packages ----
 
 library(tidyverse) # Core tidyverse packages
 library(readxl) # To read excel files
 library(sf) # To plot maps
 sf_use_s2(FALSE) # Switch from S2 to GEOS
 
-##### 2. Load data ----
+```
 
-#2.1. Reef polygons data
+# Reef surface within MPA
+
+```{r}
+
+# 1. Load data ----
+
+# 2.1 Reef polygons data --
 
 load(file = "./../data/reefs.eez.RData")
-
 
 data_reefs <- reefs.eez %>%
   # Re-assign TERRITORY1 depending on geopolitical issues
   mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
                                 TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
                                 TRUE ~ SOVEREIGN1)) %>% 
-  st_transform(., crs = 32662)
+  st_transform(., crs = 4326) %>% 
+  st_make_valid()
+
+# 2.2 Load data --
+
+# Unioned MPA polygons
+load("./../data/06_mpa/00-data_mpa_union.RData")
+
+total_mpa <- st_transform(total_mpa, crs = 4326) %>% 
+  st_make_valid()
+
+ggplot() +
+  geom_sf(data=total_mpa) +
+  geom_sf(data=data_reefs, fill = "red")
+
+
+
 
 
 # 2.2 Reef surface data
@@ -51,10 +72,10 @@ reef_total <- read_csv2("../figs/04_table-reef-surface-by-country.csv")
 
 # 2.3 MPA data
 # Total surface of MPA per country
-mpa_tot_area <- read_csv2("../figs/02_mpa-with-reef.csv")
+mpa_tot_area <- read_csv2("../data/06_mpa/02_mpa-with-reef.csv")
 
 # Unioned MPA polygons
-load("./../data/02_mpa/00-data_mpa_union.RData")
+load("./../data/06_mpa/00-data_mpa_union.RData")
 
 
 ## 3. Overlap reefs and MPA
@@ -71,6 +92,17 @@ protected_reefs <- data_reefs %>%
   summarise(cr_in_mpa = sum(cr_mpa))
 
 units(protected_reefs$cr_in_mpa) <- "km2"  
+
+
+temp <- data_reefs %>% 
+  filter(SOVEREIGN1 =="Egypt")
+
+temp_bis <- total_mpa %>% 
+    filter(SOVEREIGN1 =="Egypt")
+
+
+ggplot() +
+  geom_sf(data=total_mpa)
 
 # Percentage of coral reefs under protection
 
@@ -169,9 +201,7 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
                                         "TZA" = "Tanzania",
                                         "USA" = "United States",
                                         "VUT" = "Vanuatu"))) %>% 
-  st_transform(., crs = 32662) %>%
-  st_simplify(., dTolerance = 50) %>% 
-  st_intersection(., data_eez) 
+  st_transform(., crs = 32663)
   
 
 data_mpa <- data_mpa %>% st_make_valid(.)
