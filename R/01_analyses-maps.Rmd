@@ -726,7 +726,7 @@ plot_donuts <- data_subindicators %>%
 
 # 3. Make the plot ----
 
-ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5))
+ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5), labels = c("A", "B"))
 
 # 4. Save the plot ----
 
@@ -762,9 +762,9 @@ final <- image_composite(plot, logo_spatial, offset = "+927.5+2235", gravity = "
                 
 final <- image_composite(final, logo_temporal, offset = "+1700+2235", gravity = "northwest")
 
-final <- image_composite(final, logo_methods, offset = "+2472.5+2235", gravity = "northwest")
+final <- image_composite(final, logo_methods, offset = "+2470+2235", gravity = "northwest")
 
-final <- image_composite(final, logo_taxo, offset = "+3245+2235", gravity = "northwest")
+final <- image_composite(final, logo_taxo, offset = "+3235+2235", gravity = "northwest")
 
 # 5.6 Save final image --
 
@@ -799,7 +799,7 @@ plot_donuts <- data_subindicators %>%
 
 # 3. Make the plot ----
 
-ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5))
+ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5), labels = c("A", "B"))
 
 # 4. Save the plot ----
 
@@ -835,9 +835,9 @@ final <- image_composite(plot, logo_spatial, offset = "+927.5+2235", gravity = "
                 
 final <- image_composite(final, logo_temporal, offset = "+1700+2235", gravity = "northwest")
 
-final <- image_composite(final, logo_methods, offset = "+2472.5+2235", gravity = "northwest")
+final <- image_composite(final, logo_methods, offset = "+2470+2235", gravity = "northwest")
 
-final <- image_composite(final, logo_taxo, offset = "+3245+2235", gravity = "northwest")
+final <- image_composite(final, logo_taxo, offset = "+3235+2235", gravity = "northwest")
 
 # 5.6 Save final image --
 
