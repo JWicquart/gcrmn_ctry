@@ -19,147 +19,26 @@ knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
 
 ```
 
-# Import functions, packages and data
-
-```{r}
-
-# 1. Required packages ----
-
-library(tidyverse) # Core tidyverse packages
-library(readxl) # To read excel files
-library(sf) # To plot maps
-sf_use_s2(FALSE) # Switch from S2 to GEOS
-
-```
-
-# Reef surface within MPA
-
-```{r}
-
-# 1. Load data ----
-
-# 2.1 Reef polygons data --
-
-load(file = "./../data/reefs.eez.RData")
-
-data_reefs <- reefs.eez %>%
-  # Re-assign TERRITORY1 depending on geopolitical issues
-  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
-                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
-                                TRUE ~ SOVEREIGN1)) %>% 
-  st_transform(., crs = 4326) %>% 
-  st_make_valid()
-
-# 2.2 Load data --
-
-# Unioned MPA polygons
-load("./../data/06_mpa/00-data_mpa_union.RData")
-
-total_mpa <- st_transform(total_mpa, crs = 4326) %>% 
-  st_make_valid()
-
-ggplot() +
-  geom_sf(data=total_mpa) +
-  geom_sf(data=data_reefs, fill = "red")
-
-
-
-
-
-# 2.2 Reef surface data
-
-reef_total <- read_csv2("../figs/04_table-reef-surface-by-country.csv")
-
-# 2.3 MPA data
-# Total surface of MPA per country
-mpa_tot_area <- read_csv2("../data/06_mpa/02_mpa-with-reef.csv")
-
-# Unioned MPA polygons
-load("./../data/06_mpa/00-data_mpa_union.RData")
-
-
-## 3. Overlap reefs and MPA
-# Intersection coral reefs and MPA
-top_30 <- unique(total_mpa$SOVEREIGN1)
-
-protected_reefs <- data_reefs %>% 
-  filter(SOVEREIGN1 %in% top_30) %>% 
-  arrange(SOVEREIGN1) %>% 
-  st_intersection(., total_mpa) %>% 
-  mutate(cr_mpa = st_area(geometry)) %>% 
-  st_drop_geometry() %>% 
-  group_by(SOVEREIGN1) %>% 
-  summarise(cr_in_mpa = sum(cr_mpa))
-
-units(protected_reefs$cr_in_mpa) <- "km2"  
-
-
-temp <- data_reefs %>% 
-  filter(SOVEREIGN1 =="Egypt")
-
-temp_bis <- total_mpa %>% 
-    filter(SOVEREIGN1 =="Egypt")
-
-
-ggplot() +
-  geom_sf(data=total_mpa)
-
-# Percentage of coral reefs under protection
-
-protected_reefs <- protected_reefs %>% 
-  left_join(., reef_total) %>% 
-  group_by(SOVEREIGN1) %>% 
-  mutate(cr_in_mpa_rel = cr_in_mpa/total_area_abs*100)
-
-# Export cr_in_mpa 
-write_csv2(protected_reefs, "./../data/02_mpa/00_protected-coral-reefs.csv")
-
-
-```
-
-
-
-
-# Import functions, packages and data
+# 1. Import functions, packages and data
 - MPA zones implemented in the 30 countries studied
-- Data filtration : * Were retained only protected areas fitting the "is MAP" definition (as defined by MPAtlas) 
-* Are taken into account only MPA zones that are considered implemented (as defined by MPAtlas)
+- Data filtration : 
+  * Were retained only protected areas fitting the "is MAP" definition (as defined by MPAtlas) 
+  * Are taken into account only MPA zones that are considered implemented (as defined by MPAtlas)
+- Simplified geometries for MPA polygons (100m tolerance)
 
 ```{r base}
 
-source("functions/graphical_par.R")
-source("functions/theme_map.R")
-
-
-##### 2. Required packages ----
+##### 1. Required packages ----
 
 library(tidyverse) # Core tidyverse packages
-library(readxl) # To read excel files
+#library(smoothr) # To smooth and tidy spatial features
 library(sf) # To plot maps
 sf_use_s2(FALSE) # Switch from S2 to GEOS
 
-##### 3. Load data ----
 
-### 3.1? EEZ from Falnders Institute 
-data_bbox <- read_xlsx("./../data/top_30_bbox.xlsx", sheet = 1)
+##### 2. Load data ----
 
-data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
-  # Re-assign Territory depending to geopolitical issues
-  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
-                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
-                                TRUE ~ SOVEREIGN1)) %>% 
-  # Extract top 30 countries
-  filter(SOVEREIGN1 %in% data_bbox$SOVEREIGN1) %>% 
-  # Remove territories that do not contains coral reefs 
-  filter(!(TERRITORY1 %in% c("Kerguélen", "Falkland / Malvinas Islands", "United Kingdom", "France",
-                             "Saint Helena", "Alaska", "Crozet Islands", "Amsterdam and Saint Paul Islands",
-                             "South Georgia and the South Sandwich Islands", "Jersey", "Guernsey", "French Guiana",
-                             "Heard and McDonald Islands", "Macquarie Island", "Ascension",
-                             "Saint-Pierre and Miquelon", "Tristan da Cunha", "Gibraltar"))) %>% 
-  st_transform(., crs = 32662)
-
-
-### 3.2. MPAs from MPAtlas
+### 2.1. MPAs from MPAtlas
 
 data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_clean.shp") %>% 
   # Select top 30
@@ -201,13 +80,42 @@ data_mpa <- read_sf("./../data/02_mpa/mpatlas_20201223_clean/mpatlas_20201223_cl
                                         "TZA" = "Tanzania",
                                         "USA" = "United States",
                                         "VUT" = "Vanuatu"))) %>% 
-  st_transform(., crs = 32663)
-  
+  st_transform(., crs = 32663) %>% 
+  st_simplify(., dTolerance = 100) %>% 
+  st_make_valid(.)
 
-data_mpa <- data_mpa %>% st_make_valid(.)
 
 
-### 3.3. Transformed data from WRI - Reefs merged with EEZ
+## 2.2 Selecting the pilot countries
+
+top_30 <- unique(data_mpa$SOVEREIGN1)
+
+
+
+## 2.3 EEZ from Flanders Institute 
+
+data_eez <- read_sf("../data/01_maps/World_EEZ_v11_20191118/eez_v11.shp") %>% 
+  # Re-assign Territory depending to geopolitical issues
+  mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
+                                TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
+                                TRUE ~ SOVEREIGN1)) %>% 
+  # Extract top 30 countries
+  filter(SOVEREIGN1 %in% top_30) %>% 
+  # Remove territories that do not contains coral reefs 
+  filter(!(TERRITORY1 %in% c("Kerguélen", "Falkland / Malvinas Islands", "United Kingdom", "France",
+                             "Saint Helena", "Alaska", "Crozet Islands", "Amsterdam and Saint Paul Islands",
+                             "South Georgia and the South Sandwich Islands", "Jersey", "Guernsey", "French Guiana",
+                             "Heard and McDonald Islands", "Macquarie Island", "Ascension",
+                             "Saint-Pierre and Miquelon", "Tristan da Cunha", "Gibraltar"))) %>% 
+  st_transform(., crs = 32663) %>% 
+  st_simplify(., dTolerance = 100) %>% 
+  st_make_valid()
+
+
+
+
+### 2.4 Transformed data from WRI - Reefs merged with EEZ 
+# 500 m resolution
 
 load(file = "./../data/reefs.eez.RData")
 
@@ -217,257 +125,124 @@ data_reefs <- reefs.eez %>%
   mutate(SOVEREIGN1 = case_when(TERRITORY1 == "Glorioso Islands" ~ "France",
                                 TERRITORY1 == "Chagos Archipelago" ~ "United Kingdom",
                                 TRUE ~ SOVEREIGN1)) %>% 
-  st_transform(., crs = 32662)
+  st_transform(., crs = 32663)
 
+remove(reefs.eez)
+
+### 2.5 Surface of coral reef per country
+
+reef_total <- read_csv2("../figs/04_table-reef-surface-by-country.csv")
+
+```
+
+# 2. Total surface of MPA per country
+
+```{r}
+
+## 1. Joining the MPA polygons and EEZ to exclude the terrestrial part of the MPAs
+# CRS = 4326 ; simplified geometry ; merged with EEZ 
+
+##For all countries except Australia (intersection pb with EEZ)
+mpa_tot_km2 <- data_mpa %>%
+  filter(SOVEREIGN1 != "Australia") %>% 
+  st_intersection(., data_eez) %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarize(geometry = st_union(st_combine(geometry), by_feature = TRUE)) %>%
+  st_transform(., crs = 4326) %>% 
+  mutate(mpa_area = st_area(geometry)) %>% 
+  st_drop_geometry() %>% 
+  ungroup()
+
+units(mpa_tot_km2$mpa_area) <- "km2"
+
+## For Australia
+
+mpa_aus <- data_mpa %>% 
+  filter(SOVEREIGN1 == "Australia") %>% 
+  st_make_valid(.) %>% 
+  st_intersection(., data_eez) %>% 
+  st_make_valid() %>% 
+  st_buffer(., dist = 0.1) %>% 
+  summarize(geometry = st_union(geometry)) 
+
+mpa_aus_km2 <- mpa_aus %>% 
+  #st_make_valid(.) %>% 
+  st_transform(., crs = 4326) %>% 
+  #st_make_valid() %>% 
+  mutate(mpa_area = st_area(geometry)) %>% 
+  st_drop_geometry() 
+
+units(mpa_aus_km2$mpa_area) <- "km2"
+
+mpa_tot_km2 <- mpa_tot_km2 %>% 
+  bind_rows(., mpa_aus_km2) %>% 
+  mutate(SOVEREIGN1 = replace_na(SOVEREIGN1, "Australia")) %>% 
+  arrange(SOVEREIGN1) 
+
+
+
+# 3. Remove intermediate variables
+
+remove(mpa_surface)
+
+# 4. Export table including the surface of MPA per country
+
+write_csv2(mpa_tot_km2, "../figs/00_mpa-with-reef.csv")
 
 
 ```
 
-# Surface MPA
+# 3. Reef surface under protection
 
 ```{r}
-
-# 1. Calculate MPA area
-
-mpa_area <- list()
-
-for (i in unique(data_mpa$SOVEREIGN1)) {
-  
-  data_mpa_i <- data_mpa %>% 
-    filter(SOVEREIGN1 == i) 
-  
-  mpa_comb_i <- st_union(st_combine(data_mpa_i), by_feature = T)
-   
-  mpa_area_i <- st_area(mpa_comb_i) 
-  
-  units(mpa_area_i) <- "km^2"
-  
-  mpa_area[[i]] = mpa_area_i
-  
-}
-
-
-
-# 2. Clean table with all MPA related information
-
-mpa_table <- as.data.frame(mpa_area, row.names = T) %>% 
-  
-  pivot_longer(., "United.States":"Indonesia", names_to = "SOVEREIGN1", values_to = "mpa_area_km2") %>% 
-  mutate(SOVEREIGN1 = str_replace_all(SOVEREIGN1, 
-                                      c("Marshall.Islands" = "Marshall Islands",
-                                        "Papua.New.Guinea" = "Papua New Guinea",
-                                        "Saudia.Arabia" = "Saudi Arabia",
-                                        "Solomon.Islands" = "Solomon Islands",
-                                        "United.Kingdom" = "United Kingdom",
-                                        "United.States" = "United States"))) %>% 
-  arrange(SOVEREIGN1) %>% 
-  mutate(mpa_area_km2 = round(mpa_area_km2, 0 ))
-
-# 3. Save table 
-
-write_csv2(mpa_table, "../figs/02_mpa-with-reef.csv")
-
-
-mpa_tot_area <- read_csv2("../figs/02_mpa-with-reef.csv")
-
-```
-
-# 2. Reef surface under protection
-Tjrs le meme pb avec l'Australie GRRRRRRRRRRRRRRRRRRRRRR
--> Australia removed and it works
-
-```{r}
-
 
 #### 1. Dissolve all MPA zones in one polygon per country
 
-#top_30 <- c("Belize", "Egypt")
-
 top_30 <- unique(data_mpa$SOVEREIGN1)
 
-  
-# Loop to create the combined polygons for each country
-mpa_tot <- list()
+total_mpa <- data_mpa %>% 
+  group_by(SOVEREIGN1) %>% 
+  summarize(geometry = st_union(st_combine(geometry), by_feature = TRUE)) %>% 
+  mutate(mpa_area = st_area(geometry)) %>% 
+  ungroup()
 
-for (i in top_30) {
-  
-  data_mpa_i <- data_mpa %>% 
-    filter(SOVEREIGN1 == i) 
-    
-  mpa_poly_i <- st_union(st_combine(data_mpa_i), by_feature = TRUE) 
-  
-  mpa_tot[[i]] <- mpa_poly_i
-  
-}
-
-# Convert the list in a table
-total_mpa <- as_tibble(mpa_tot[1:29], rownames = NULL) %>% 
-  # From the 1st to the last country in top_30
-  pivot_longer(., "United States": "Indonesia", names_to = "SOVEREIGN1", values_to = "geometry") %>% 
-  st_as_sf(., crs = 32662) %>% 
-  st_transform(., crs = 32662) %>% 
-  arrange(SOVEREIGN1)
 
 # Export mpa_tot, since spatial analyses are time consuming
-save(mpa_tot, 
-     file = "./../data/02_mpa/00-data_mpa_merged_2.RData")
-
 save(total_mpa, 
      file = "./../data/02_mpa/00-data_mpa_union.RData")
 
-load("./../data/02_mpa/00-data_mpa_union.RData")
+#total_mpa <- st_make_valid(total_mpa)
 
 #### 2. Coral reefs intersection with MPA
 
-cr_in_mpa <- data_reefs %>% 
+coral_mpa <- data_reefs %>% 
   filter(SOVEREIGN1 %in% top_30) %>% 
-  arrange(SOVEREIGN1) %>% 
-  st_intersection(., total_mpa) %>% 
+  st_make_valid(.) %>% 
+  st_intersection(., total_mpa) %>%   
   mutate(cr_mpa = st_area(geometry)) %>% 
   st_drop_geometry() %>% 
   group_by(SOVEREIGN1) %>% 
-  summarise(mpa_cr_ctry = sum(cr_mpa))
-
-units(cr_in_mpa$mpa_cr_ctry) <- "km2"  
-
-# Export cr_in_mpa, since spatial analyses are time consuming
-write_csv2(cr_in_mpa, "./../data/02_mpa/00_protected-coral-reefs.csv")
+  summarise(coral_mpa_km2 = sum(cr_mpa/1000000)) %>% 
+  arrange(SOVEREIGN1)  
 
 
-test <- cr_in_mpa %>% 
-  ungroup() %>% 
-  summarise(total = sum(mpa_cr_ctry))
-```
+# 3. Percentage of coral reefs under protection
 
-
-# Australia
-
-```{r}
-
-# MPA Australia
-mpa_aus <- data_mpa %>% 
-  filter(SOVEREIGN1 == "Australia") 
-
-test <- st_simplify(mpa_aus, dTolerance = 100)
-
-
-union_mpa <- st_union(st_combine(test), by_feature = TRUE)
-
-temp <- total_mpa %>% filter(SOVEREIGN1 == "Egypt") 
-temp_bis <- data_reefs %>% filter(SOVEREIGN1 == "Egypt")
-
-ggplot() +
-  geom_sf(data = temp_bis) +
-  geom_sf(data = temp_bis, col = "blue") +
-  geom_sf(data = test, col = "red")
-
-mpa_aus_km2 <- st_area(union_mpa)
-units(mpa_aus_km2) <- "km2"
-
-# Intersection coral reefs and MPA
-
-cr_mpa_aus <- data_reefs %>% 
-  filter(SOVEREIGN1 == "Australia") %>% 
-  st_intersection(., union_mpa) %>% 
-  mutate(cr_mpa = st_area(geometry)) %>% 
-  st_drop_geometry() %>% 
+protected_reefs_km2 <- coral_mpa %>% 
+  mutate(coral_mpa_km2 = as.numeric(coral_mpa_km2)) %>%  
+  left_join(reef_total, .) %>% 
   group_by(SOVEREIGN1) %>% 
-  summarise(mpa_cr_ctry = sum(cr_mpa))
+  mutate(coral_mpa_rel = coral_mpa_km2/(total_area_abs)*100) %>% 
+  rename(., coral_area_abs = total_area_abs, 
+         coral_area_rel = total_area_rel) 
 
-# Units from m2 to km2
-units(cr_mpa_aus$mpa_cr_ctry) <- "km2"
+
+
+# Export the results: coral reef area 
+write_csv2(protected_reefs_km2, "./../figs/06_protected-coral-reefs.csv")
 
 
 ```
-
-
-
-# Not used - just in case - Coral reefs overlap 
-
-```{r}
-
-# Select top 30 countries (29, since Eritrea does not have MPA)
-top_30 <- unique(data_mpa$SOVEREIGN1)
-
-# Select the coral reefs in MPA and calculate their surface per country
-mpa_w_cr <- data_reefs %>% 
-  filter(SOVEREIGN1 %in% top_30) %>% 
-  # create polygons of overlaps btw coral reefs and MPA zones
-  st_intersection(., st_make_valid(data_mpa)) %>% 
-  # Calculate the area of reefs under protection
-  group_by(SOVEREIGN1) %>% 
-  mutate(cr_mpa = st_area(geometry)) %>% 
-  #summarise(mpa_cr_ctry = sum(cr_mpa)) %>% 
-  #hopefully getting rid of the overlaps
-  distinct(Reef_id, .keep_all = TRUE) %>% 
-  summarise(mpa_cr_ctry = sum(cr_mpa))
-
-# Convert m^2 in km^2
-units(mpa_w_cr$mpa_cr_ctry) <- "km^2"
-
-# 3. Export to RData
-
-save(mpa_w_cr, 
-     file = "./../data/02_mpa/00-mpa_cr_area_merged.RData")
-
-############## TESTS #############
-# pb: Australia: reef area in MPA > total reef area
-temp <- data_reefs %>% 
-  filter(SOVEREIGN1 == "Indonesia") %>% 
-  st_intersection(., st_make_valid(data_mpa))  %>% 
-  mutate(cr_mpa = st_area(geometry)) %>%
-  st_drop_geometry() %>% 
-  distinct(Reef_id, .keep_all = TRUE) %>% 
-  summarise(mpa_cr_ctry = sum(cr_mpa)/1000000)
-
-
-temp <- mpa_w_cr %>% 
-  filter(SOVEREIGN1 == "Australia")
-
-
-  ggplot() +
-  geom_sf(data = test, col = "blue") +
-    geom_sf(data = test2, col = "green") +
-  geom_sf(data = temp, col = "red") 
-  
-
-  
-
-#######
-test <- data_mpa %>% 
-  filter(SOVEREIGN1 %in% c("Australia"))
-  
-test2 <- data_reefs %>% 
-  filter(SOVEREIGN1 == "Australia")
-  
-temp <- data_reefs %>% 
-  filter(SOVEREIGN1 == "Australia") %>% 
-  mutate(cr_tot = st_area(geometry)) %>% 
-  summarise(cr_ctry = sum(cr_tot))
-
-
-#######
-ctry_test <- c("Belize", "Egypt", "Sudan")
-
-for (i in ctry_test) {
-  
-
-  
-}
-
-  test <- st_join(data_reefs, temp, left = FALSE) %>% 
-  st_drop_geometry() %>% 
-  distinct(., mpa_id)
-
-
-
-ggplot() +
-  #geom_sf(data = temp) +
-  geom_sf(data = mpa_w_cr)
-
-```
-
-
 
 
 # Reproducibility

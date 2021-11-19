@@ -12,11 +12,11 @@
 ##########
 
 data/
-pres/
-figs/
-output/
-lit/
 doc/
+figs/
+lit/
 misc/
+pres/
+output/
 ppt/
 report/
