@@ -41,7 +41,6 @@ library(formattable) # For interactive html tables
 library(DT) # For interactive html tables
 library(ggpubr) # To assemble plots
 library(ggsflabel)
-library(magick)
 
 # 3. Set default ggplot theme ----
 
