@@ -319,7 +319,7 @@ for (i in unique(data_method$SOVEREIGN1)) {
     filter(SOVEREIGN1 == i) %>% 
     ggplot(data = ., aes(x = Method, y = Rel, label = paste0(round(Rel, 0), " %"), fill = Method)) +
     geom_bar(stat = "identity", show.legend = FALSE) +
-    geom_text(hjust = -0.2) +
+    geom_text(hjust = -0.2, family = font_choose_graph) +
     coord_flip() +
     theme(axis.text = element_text(size = 12),
           axis.title = element_text(size = 16),
@@ -409,7 +409,7 @@ for (i in unique(data_method$SOVEREIGN1)) {
   plot_i <- ggplot() +
     geom_bar(data = data_method_i, aes(x = Time_range, y = Rel, fill = Method), 
              stat = "identity", width = 0.7) +
-    geom_text(data = data_method_total_i, aes(x = Time_range, y = Rel, label = Abs), vjust = -1) +
+    geom_text(data = data_method_total_i, aes(x = Time_range, y = Rel, label = Abs), vjust = -1, family = font_choose_graph) +
     scale_fill_manual(name = "Method",
                       breaks = c("Photo-quadrat", "LIT", "PIT", "Video transect", "Visual census", "Unknown"),
                       values = c("#16a085", "#00b16a", "#00b5cc", "#3498db", "#19b5fe", "#6c7a89"),

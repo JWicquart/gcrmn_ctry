@@ -8,7 +8,7 @@ ggplot_map_global <- function(){
     # Benthos
     geom_sf(data = data_benthos_range_i, shape = 21, col = "black", aes(fill = interval_class), size = 2) +
     # EEZ label
-    geom_sf_label_repel(data = data_eez_sovereign, aes(label = TERRITORY1), 
+    geom_sf_label_repel(data = data_eez_sovereign, aes(label = TERRITORY1), family = font_choose_graph,
                         force = 100, size = 4, seed = 10, alpha = 0.5, max.overlaps = 100) +
     # Misc
     coord_sf(ylim = c(-45, 45)) +

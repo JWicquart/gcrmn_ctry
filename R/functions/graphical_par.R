@@ -4,7 +4,9 @@ require(extrafont) # For fonts
 
 # 2. Set the default font family ----
 
-font_choose_graph <- "ArialMT"
+windowsFonts("Open Sans" = windowsFont("Open Sans"))
+
+font_choose_graph <- "Open Sans"
 
 # 3. Set the colors ----
 

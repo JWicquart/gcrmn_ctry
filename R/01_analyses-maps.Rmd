@@ -30,8 +30,6 @@ source("functions/theme_map.R")
 source("functions/ggplot_map_eez.R")
 source("functions/ggplot_map_global.R")
 
-windowsFonts("ArialMT" = windowsFont("ArialMT"))
-
 # 2. Required packages ----
 
 library(magrittr) # To use special pipes
@@ -722,7 +720,7 @@ plot_donuts <- data_subindicators %>%
   scale_fill_identity() +
   xlim(0.2,2.5) +
   facet_grid(~subindicator) +
-  theme(strip.text.x = element_text(vjust = 1))
+  theme(strip.text.x = element_text(vjust = 1, family = font_choose_graph, size = 8))
 
 # 3. Make the plot ----
 
@@ -731,44 +729,6 @@ ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5), labels = 
 # 4. Save the plot ----
 
 ggsave(file = "../figs/05_indicators-summary_live-coral-cover.png", dpi = 600)
-
-# 5. Add logo on the plot ----
-
-# 5.1 Load image --
-
-plot <- image_read("../figs/05_indicators-summary_live-coral-cover.png")
-
-# 5.2 Change the background color --
-
-plot <- image_background(plot, "white")
-
-# 5.3 Load the logos --
-
-logo_spatial <- image_read("../figs/00_logo_spatial-extent.png")
-
-logo_temporal <- image_read("../figs/00_logo_temporal-extent.png")
-
-logo_methods <- image_read("../figs/00_logo_methods.png")
-
-logo_taxo <- image_read("../figs/00_logo_taxo.png")
-
-# 5.4 Convert all images to magick objects --
-
-img <- c(plot, logo_spatial, logo_temporal, logo_methods, logo_taxo)
-
-# 5.5 Combine images --
-
-final <- image_composite(plot, logo_spatial, offset = "+927.5+2235", gravity = "northwest")
-                
-final <- image_composite(final, logo_temporal, offset = "+1700+2235", gravity = "northwest")
-
-final <- image_composite(final, logo_methods, offset = "+2470+2235", gravity = "northwest")
-
-final <- image_composite(final, logo_taxo, offset = "+3235+2235", gravity = "northwest")
-
-# 5.6 Save final image --
-
-image_write(final, path = "../figs/05_indicators-summary_live-coral-cover_logo.png", format = "png")
 
 ```
 
@@ -795,7 +755,7 @@ plot_donuts <- data_subindicators %>%
   scale_fill_identity() +
   xlim(0.2,2.5) +
   facet_grid(~subindicator) +
-  theme(strip.text.x = element_text(vjust = 1))
+  theme(strip.text.x = element_text(vjust = 1, family = font_choose_graph, size = 8))
 
 # 3. Make the plot ----
 
@@ -804,44 +764,6 @@ ggarrange(map_indicator, plot_donuts, ncol = 1, heights = c(1.2, 0.5), labels = 
 # 4. Save the plot ----
 
 ggsave(file = "../figs/05_indicators-summary_other-benthic-groups.png", dpi = 600)
-
-# 5. Add logo on the plot ----
-
-# 5.1 Load image --
-
-plot <- image_read("../figs/05_indicators-summary_other-benthic-groups.png")
-
-# 5.2 Change the background color --
-
-plot <- image_background(plot, "white")
-
-# 5.3 Load the logos --
-
-logo_spatial <- image_read("../figs/00_logo_spatial-extent.png")
-
-logo_temporal <- image_read("../figs/00_logo_temporal-extent.png")
-
-logo_methods <- image_read("../figs/00_logo_methods.png")
-
-logo_taxo <- image_read("../figs/00_logo_taxo.png")
-
-# 5.4 Convert all images to magick objects --
-
-img <- c(plot, logo_spatial, logo_temporal, logo_methods, logo_taxo)
-
-# 5.5 Combine images --
-
-final <- image_composite(plot, logo_spatial, offset = "+927.5+2235", gravity = "northwest")
-                
-final <- image_composite(final, logo_temporal, offset = "+1700+2235", gravity = "northwest")
-
-final <- image_composite(final, logo_methods, offset = "+2470+2235", gravity = "northwest")
-
-final <- image_composite(final, logo_taxo, offset = "+3235+2235", gravity = "northwest")
-
-# 5.6 Save final image --
-
-image_write(final, path = "../figs/05_indicators-summary_other-benthic-groups_logo.png", format = "png")
 
 ```
 
