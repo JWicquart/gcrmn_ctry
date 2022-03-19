@@ -1,7 +1,7 @@
 # **Status of coral reef monitoring: An assessment of methods and data at the national level**
 
 
-This repository contains code used for the production of the report:
+**This repository contains code used for the production of the report**:
 
 [Prasil Delaval, N., Wicquart, J., Staub, F., Planes, S. (eds.). Status of coral reef monitoring: an assessment of methods and data at the national level. Global Coral Reef Monitoring Network (GCRMN)/International Coral Reefs Initiative (ICRI), 2021.](https://www.icriforum.org/wp-content/uploads/2022/03/GCRMN_Status_of_Coral_Reef_Monitoring_-_An_Assessment_of_Methods_and_Data_at_the_National_Level_-_WEB.pdf)
 
@@ -15,8 +15,23 @@ On the project main page on GitHub, click on the green button `Code` and then cl
 
 ### 2.1 Datasets description
 
+The figures and tables presented in this report were made using the seven following datasets:
 
 
+* **Background maps**. The background maps data of land, minor islands and atolls as 1:10 m shapefiles (v. 4.1.0) were
+obtained from Natural Earth Data (Natural Earth Data, 2018).
+
+* **Economic Exclusive Zone (EEZ)**. The EEZ shapefile (v.11) was obtained from the Flanders Marine Institute 2019.
+
+* **Coral reefs distribution**. The distribution of coral reefs of the world shapefile was obtained from the WRI (Institute for Marine Remote Sensing - University of South Florida (IMaRS-USF), Institut de Recherche pour le Développement (IRD), UNEP-WCMC, The WorldFish Center, & World Resources Institute, 2011). This dataset was used to ensure consistency with the GCRMN report Status of Coral Reefs of the World: 2020 (Souter et al., 2021), which also uses this dataset.
+
+* **Hard coral species richness**. The number of hard coral species in each country was estimated based on the IUCN Red-List Database (IUCN, 2021).
+
+* **Coral reef fish species richness**. The number of fish species associated with coral reefs in each country was estimated based on the Fishbase database (Froese & Pauly, 2020).
+
+* **Marine Protected Areas (MPA)**. Marine Protected Area shapefiles were obtained from the Marine Protection Atlas Database (Marine Conservation Institute, 2020). Marine Protection Atlas uses the World Database on Protected Areas (UNEP-WCMC & IUCN, 2020) as the starting point for its database, conducting an independent, third-party review of the data and making additions and corrections if necessary.
+
+* **2020 GCRMN world report database**. The database built for the 2020 GCRMN Report Status of Coral Reefs of the World: 2020 (Souter et al., 2021) was used to describe the monitoring within the different countries. Thousands of raw datasets, provided by numerous contributors worldwide, were homogenized and aggregated based on a dedicated workflow presented in [Wicquart et al, (2022)](https://www.sciencedirect.com/science/article/pii/S1574954121003344), order to produce a unique and homogeneous database. Variables used in this database are presented in the **Table 1**.
 
 **Table 1.** Variables selected for the benthic synthetic dataset. The icons for the variables categories (`Cat.`) represents :memo: = description variables, :globe_with_meridians: = spatial variables, :calendar: = temporal variables, :straight_ruler: = methodological variables, :crab: = taxonomic variables, :chart_with_upwards_trend: = metric variables.
 
@@ -48,7 +63,7 @@ On the project main page on GitHub, click on the green button `Code` and then cl
 
 ## 3. How to report issues?
 
-Please report any bugs or issues [HERE](https://https://github.com/JWicquart/gcrmn_ctry/issues).
+Please report any bugs or issues [HERE](https://github.com/JWicquart/gcrmn_ctry/issues).
 
 
 ## 4. Reproducibility parameters
