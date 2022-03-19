@@ -1,13 +1,22 @@
-# **GCRMN report by country**
+# **Status of coral reef monitoring: An assessment of methods and data at the national level**
 
 
-## 1. Project organization
+This repository contains code used for the production of the report:
+
+[Prasil Delaval, N., Wicquart, J., Staub, F., Planes, S. (eds.). Status of coral reef monitoring: an assessment of methods and data at the national level. Global Coral Reef Monitoring Network (GCRMN)/International Coral Reefs Initiative (ICRI), 2021.](https://www.icriforum.org/wp-content/uploads/2022/03/GCRMN_Status_of_Coral_Reef_Monitoring_-_An_Assessment_of_Methods_and_Data_at_the_National_Level_-_WEB.pdf)
+
+
+## 1. How to download this project?
+
+On the project main page on GitHub, click on the green button `Code` and then click on `Download ZIP`
+
+
+## 2. Description of the project
+
+### 2.1 Datasets description
 
 
 
-
-
-## 2. Dataset description
 
 **Table 1.** Variables selected for the benthic synthetic dataset. The icons for the variables categories (`Cat.`) represents :memo: = description variables, :globe_with_meridians: = spatial variables, :calendar: = temporal variables, :straight_ruler: = methodological variables, :crab: = taxonomic variables, :chart_with_upwards_trend: = metric variables.
 
@@ -37,12 +46,12 @@
 | 21   | Cover       | :chart_with_upwards_trend: | Numeric | %    | Cover percentage                         |
 
 
-## 4. How to report issues?
+## 3. How to report issues?
 
 Please report any bugs or issues [HERE](https://https://github.com/JWicquart/gcrmn_ctry/issues).
 
 
-## 5. Reproducibility parameters
+## 4. Reproducibility parameters
 
 ```R
 R version 4.0.3 (2020-10-10)
