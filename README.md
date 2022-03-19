@@ -30,7 +30,7 @@ obtained from [Natural Earth Data (Natural Earth Data, 2018)](https://www.natura
 
 * **Marine Protected Areas (MPA)**. Marine Protected Area shapefiles were obtained from the Marine Protection Atlas Database (Marine Conservation Institute, 2020). Marine Protection Atlas uses the World Database on Protected Areas (UNEP-WCMC & IUCN, 2020) as the starting point for its database, conducting an independent, third-party review of the data and making additions and corrections if necessary.
 
-* **2020 GCRMN world report database**. The database built for the 2020 GCRMN Report [Status of Coral Reefs of the World: 2020 (Souter et al., 2021)](https://gcrmn.net/2020-report/) was used to describe the monitoring within the different countries. Thousands of raw datasets, provided by numerous contributors worldwide, were homogenized and aggregated based on a dedicated workflow presented in [Wicquart et al, (2022)](https://www.sciencedirect.com/science/article/pii/S1574954121003344), order to produce a unique and homogeneous database. Variables used in this database are presented in the **Table 1**.
+* **2020 GCRMN world report database**. The database built for the 2020 GCRMN Report [Status of Coral Reefs of the World: 2020 (Souter et al., 2021)](https://gcrmn.net/2020-report/) was used to describe the monitoring within the different countries. Hundreds of raw datasets, provided by numerous contributors worldwide, were homogenized and aggregated based on a dedicated workflow presented in [Wicquart et al, (2022)](https://www.sciencedirect.com/science/article/pii/S1574954121003344), order to produce a unique and homogeneous database. Variables used in this database are presented in the **Table 1**.
 
 **Table 1.** Variables selected for the benthic synthetic dataset. The icons for the variables categories (`Cat.`) represents :memo: = description variables, :globe_with_meridians: = spatial variables, :calendar: = temporal variables, :straight_ruler: = methodological variables, :crab: = taxonomic variables, :chart_with_upwards_trend: = metric variables.
 
@@ -61,13 +61,13 @@ obtained from [Natural Earth Data (Natural Earth Data, 2018)](https://www.natura
 
 ### 2.2 Code description
 
-* `00_data-cleaning.Rmd`
-* `01_analyses-maps.Rmd`
-* `02_analyses-graphs.Rmd`
-* `03_analyses-hard-coral-species.Rmd`
-* `04_analyses-fish-species.Rmd`
-* `05_analyses-mpa.Rmd`
-* `06_data-contributors.R`
+* `00_data-cleaning.Rmd` This code is used to calculate reef area per country, to associate EEZ to benthic cover monitoring data and to select the data for the 30 pilot countries.
+* `01_analyses-maps.Rmd`. This code is used to produce all the maps.
+* `02_analyses-graphs.Rmd` This code is used to produce all other graphical outputs.
+* `03_analyses-hard-coral-species.Rmd`. This code is used to estimate the number of hard corals within each countries.
+* `04_analyses-fish-species.Rmd` This code is used to estimate the number of coral reef fish species within each countries.
+* `05_analyses-mpa.Rmd` This code is used to estimate the total MPA area within each country.
+* `06_data-contributors.R` This code is used to create the list of data contributors.
 
 ## 3. How to report issues?
 
