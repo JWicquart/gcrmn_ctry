@@ -17,21 +17,20 @@ On the project main page on GitHub, click on the green button `Code` and then cl
 
 The figures and tables presented in this report were made using the seven following datasets:
 
-
 * **Background maps**. The background maps data of land, minor islands and atolls as 1:10 m shapefiles (v. 4.1.0) were
-obtained from Natural Earth Data (Natural Earth Data, 2018).
+obtained from [Natural Earth Data (Natural Earth Data, 2018)](https://www.naturalearthdata.com/downloads/).
 
-* **Economic Exclusive Zone (EEZ)**. The EEZ shapefile (v.11) was obtained from the Flanders Marine Institute 2019.
+* **Economic Exclusive Zone (EEZ)**. The EEZ shapefile (v.11) was obtained from the [Flanders Marine Institute, 2019](https://www.marineregions.org/downloads.php).
 
-* **Coral reefs distribution**. The distribution of coral reefs of the world shapefile was obtained from the WRI (Institute for Marine Remote Sensing - University of South Florida (IMaRS-USF), Institut de Recherche pour le Développement (IRD), UNEP-WCMC, The WorldFish Center, & World Resources Institute, 2011). This dataset was used to ensure consistency with the GCRMN report Status of Coral Reefs of the World: 2020 (Souter et al., 2021), which also uses this dataset.
+* **Coral reefs distribution**. The distribution of coral reefs of the world shapefile was obtained from the WRI (Institute for Marine Remote Sensing - University of South Florida (IMaRS-USF), Institut de Recherche pour le Développement (IRD), UNEP-WCMC, The WorldFish Center, & World Resources Institute, 2011). This dataset was used to ensure consistency with the GCRMN report [Status of Coral Reefs of the World: 2020 (Souter et al., 2021)](https://gcrmn.net/2020-report/), which also uses this dataset.
 
 * **Hard coral species richness**. The number of hard coral species in each country was estimated based on the IUCN Red-List Database (IUCN, 2021).
 
-* **Coral reef fish species richness**. The number of fish species associated with coral reefs in each country was estimated based on the Fishbase database (Froese & Pauly, 2020).
+* **Coral reef fish species richness**. The number of fish species associated with coral reefs in each country was estimated based on the [Fishbase database (Froese & Pauly, 2020)](https://www.fishbase.de/).
 
 * **Marine Protected Areas (MPA)**. Marine Protected Area shapefiles were obtained from the Marine Protection Atlas Database (Marine Conservation Institute, 2020). Marine Protection Atlas uses the World Database on Protected Areas (UNEP-WCMC & IUCN, 2020) as the starting point for its database, conducting an independent, third-party review of the data and making additions and corrections if necessary.
 
-* **2020 GCRMN world report database**. The database built for the 2020 GCRMN Report Status of Coral Reefs of the World: 2020 (Souter et al., 2021) was used to describe the monitoring within the different countries. Thousands of raw datasets, provided by numerous contributors worldwide, were homogenized and aggregated based on a dedicated workflow presented in [Wicquart et al, (2022)](https://www.sciencedirect.com/science/article/pii/S1574954121003344), order to produce a unique and homogeneous database. Variables used in this database are presented in the **Table 1**.
+* **2020 GCRMN world report database**. The database built for the 2020 GCRMN Report [Status of Coral Reefs of the World: 2020 (Souter et al., 2021)](https://gcrmn.net/2020-report/) was used to describe the monitoring within the different countries. Thousands of raw datasets, provided by numerous contributors worldwide, were homogenized and aggregated based on a dedicated workflow presented in [Wicquart et al, (2022)](https://www.sciencedirect.com/science/article/pii/S1574954121003344), order to produce a unique and homogeneous database. Variables used in this database are presented in the **Table 1**.
 
 **Table 1.** Variables selected for the benthic synthetic dataset. The icons for the variables categories (`Cat.`) represents :memo: = description variables, :globe_with_meridians: = spatial variables, :calendar: = temporal variables, :straight_ruler: = methodological variables, :crab: = taxonomic variables, :chart_with_upwards_trend: = metric variables.
 
@@ -60,6 +59,15 @@ obtained from Natural Earth Data (Natural Earth Data, 2018).
 | 20   | Species     | :crab:                     | Factor  |      | Species                                  |
 | 21   | Cover       | :chart_with_upwards_trend: | Numeric | %    | Cover percentage                         |
 
+### 2.2 Code description
+
+* `00_data-cleaning.Rmd`
+* `01_analyses-maps.Rmd`
+* `02_analyses-graphs.Rmd`
+* `03_analyses-hard-coral-species.Rmd`
+* `04_analyses-fish-species.Rmd`
+* `05_analyses-mpa.Rmd`
+* `06_data-contributors.R`
 
 ## 3. How to report issues?
 
